@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14110d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GE Flips">
+<title>GE Flips – OSRS Live Flip Finder</title>
+<link rel="icon" id="favicon">
+<link rel="apple-touch-icon" id="touchicon">
+<link rel="manifest" id="manifest">
+<style>
+:root{--bg:#14110d;--panel:#1e1a14;--panel2:#272118;--line:#3a3124;--text:#ece3cf;--muted:#a89a80;--gold:#e8b84a;--up:#4fc07a;--down:#e5655a;--accent:#d9a441;
+--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line);padding:calc(10px + var(--st)) 14px 10px;display:flex;align-items:center;gap:10px}
+header h1{margin:0;font-size:17px;color:var(--gold);flex:1}
+.live{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--up);box-shadow:0 0 0 0 rgba(79,192,122,.6);animation:pulse 2s infinite}
+.dot.err{background:var(--down)}.dot.load{background:var(--gold)}
+@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(79,192,122,0)}100%{box-shadow:0 0 0 0 rgba(79,192,122,0)}}
+.iconbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;font:inherit}
+main{padding:12px 12px calc(84px + var(--sb));max-width:820px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--panel);border-top:1px solid var(--line);display:flex;padding-bottom:var(--sb)}
+nav button{flex:1;background:none;border:0;color:var(--muted);font:inherit;font-size:11px;padding:8px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:20px;line-height:1}
+nav button.on{color:var(--gold)}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.stat .v{font-size:20px;font-weight:700;color:var(--gold)}
+.stat .s{font-size:12px;color:var(--muted)}
+h2{font-size:15px;color:var(--gold);margin:16px 2px 8px;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{font-weight:400;color:var(--muted);font-size:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;display:grid;grid-template-columns:34px 1fr auto;gap:4px 10px;align-items:center;cursor:pointer}
+.card:active{background:#2a2319}
+.card img{width:32px;height:32px;object-fit:contain;grid-row:span 2}
+.card .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .p{font-weight:700;text-align:right;white-space:nowrap}
+.card .d{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .r{font-size:12px;text-align:right;white-space:nowrap}
+.card .row3{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.pill{font-size:11px;padding:2px 7px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted)}
+.pill.g{color:var(--up);border-color:#2f5a3e}.pill.r{color:var(--down);border-color:#6b2d27}.pill.y{color:var(--gold);border-color:#6b5428}
+.order{grid-column:1/-1;display:grid;grid-template-columns:96px 1fr auto;gap:8px;align-items:center;border-radius:8px;padding:7px 10px;font-variant-numeric:tabular-nums}
+.order b{font-size:12px;letter-spacing:.5px}.order span:last-child{font-weight:700}
+.order.buy{background:#1d2a20;border:1px solid #2f5a3e}.order.buy b{color:var(--up)}
+.order.sell{background:#2e1d1b;border:1px solid #6b2d27}.order.sell b{color:var(--down)}
+.budgetbox{background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:12px;margin-bottom:10px}
+.budgetbox label{display:block;font-size:13px;color:var(--gold);font-weight:600;margin-bottom:6px}
+.brow{display:flex;gap:10px;align-items:center}.brow input{font-size:20px;font-weight:700;flex:1}.brow span{font-size:13px;white-space:nowrap}
+.quick{display:flex;gap:6px;margin-top:8px;overflow-x:auto}
+.quick button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
+.bar{height:8px;background:var(--panel2);border-radius:6px;margin-top:10px;overflow:hidden}#barFill{height:100%;width:0;background:var(--accent);transition:width .3s}
+.bused{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:5px}.bused b{color:var(--text)}
+.rank{position:relative}.rank::before{content:attr(data-rank);position:absolute;left:-4px;top:-4px;background:var(--accent);color:#1b1408;font-size:10px;font-weight:700;border-radius:10px;padding:0 5px}
+.up{color:var(--up)}.down{color:var(--down)}.muted{color:var(--muted)}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin-bottom:10px}
+.seg button{flex:1;background:none;border:0;color:var(--muted);font:inherit;font-size:13px;padding:7px 4px;border-radius:7px}
+.seg button.on{background:var(--accent);color:#1b1408;font-weight:600}
+input,select{font:inherit;font-size:16px;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.form{display:grid;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.form label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.form .chk{display:flex;align-items:center;gap:10px;color:var(--text)}
+.form .chk input{width:22px;height:22px}
+.btn{background:var(--accent);color:#1b1408;border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:600;width:100%}
+.btn.sec{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.err{background:#3a1d1a;border:1px solid #6b2d27;color:#f3b4ad;padding:10px;border-radius:10px;margin-bottom:10px;display:none;font-size:13px}
+.note{font-size:12px;color:var(--muted);margin:14px 2px}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;display:none;align-items:flex-end;justify-content:center}
+#sheet.open{display:flex}
+.sh{background:var(--panel);border-top-left-radius:16px;border-top-right-radius:16px;width:100%;max-width:820px;max-height:92vh;overflow:auto;padding:14px 14px calc(18px + var(--sb))}
+.sh .top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.sh .top h3{flex:1;margin:0;color:var(--gold);font-size:17px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.tf{display:flex;gap:6px;margin:8px 0}
+.tf button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px;font:inherit;font-size:13px}
+.tf button.on{background:var(--accent);color:#1b1408}
+svg text{fill:var(--muted);font-size:11px}
+#toast{position:fixed;left:12px;right:12px;bottom:calc(80px + var(--sb));z-index:30;background:#2c2416;border:1px solid var(--accent);color:var(--text);border-radius:12px;padding:10px 12px;display:none;font-size:14px}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+.alertrow{display:flex;gap:8px;align-items:center}
+.alertrow > *{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚖️ GE Flips</h1>
+  <div class="live"><span id="dot" class="dot"></span><span id="liveTxt">…</span></div>
+  <button class="iconbtn" id="refresh" aria-label="Aktualisieren">↻</button>
+</header>
+
+<main>
+  <div id="error" class="err"></div>
+
+  <!-- TOP -->
+  <section class="view on" id="v-top">
+    <div class="budgetbox">
+      <label for="budgetTop">💰 Verfügbares Gold – so viel darf der Plan einsetzen</label>
+      <div class="brow"><input id="budgetTop" inputmode="text" placeholder="z. B. 25m"><span id="budgetParsed" class="muted"></span></div>
+      <div class="quick"><button data-b="1m">1m</button><button data-b="5m">5m</button><button data-b="10m">10m</button><button data-b="50m">50m</button><button data-b="100m">100m</button><button data-b="500m">500m</button></div>
+      <div class="bar"><div id="barFill"></div></div>
+      <div class="bused" id="budgetUse"></div>
+    </div>
+    <div class="summary" id="summary"></div>
+    <h2>🎯 Dein Slot-Plan <small id="topInfo"></small></h2>
+    <div id="topList"></div>
+    <p class="note">Die App bewertet jede Minute alle Items automatisch: erwarteter Gewinn in 4 h (Marge nach 2 % Steuer × machbare Menge aus Budget, Buy-Limit und Volumen), gewichtet nach Verlässlichkeit (Live-Marge passt zum Stunden-Ø, frische Trades, kein Ausreißer-ROI). Der Slot-Plan wählt automatisch die besten Items für deine GE-Slots: Zuerst bekommt jeder Slot den gleichen Anteil am Budget, übriges Geld geht an die Items mit dem besten Verhältnis aus ROI und Verlässlichkeit – nie über Buy-Limit oder realistisches Volumen hinaus. Kaufmenge = Verkaufsmenge. Tipp: Für schnellere Füllung 1 gp über dem Kaufpreis bieten bzw. 1 gp unter dem Verkaufspreis anbieten.</p>
+  </section>
+
+  <!-- TRENDS -->
+  <section class="view" id="v-trend">
+    <div class="seg" id="trendSeg">
+      <button data-t="up" class="on">🚀 Steigend</button><button data-t="down">📉 Fallend</button><button data-t="vol">🔥 Volumen-Spike</button>
+    </div>
+    <div class="seg" id="trendWin">
+      <button data-w="trend1h" class="on">5 Min vs. 1 h</button><button data-w="trend24h">Jetzt vs. 24 h</button>
+    </div>
+    <div id="trendList"></div>
+  </section>
+
+  <!-- ALL / SEARCH -->
+  <section class="view" id="v-all">
+    <input id="search" placeholder="🔎 Item suchen…" autocomplete="off">
+    <div class="seg" id="allSort" style="margin-top:10px">
+      <button data-s="score" class="on">Score</button><button data-s="profit4h">Profit</button><button data-s="margin">Marge</button><button data-s="roi">ROI</button><button data-s="vol">Volumen</button>
+    </div>
+    <div id="allList"></div>
+  </section>
+
+  <!-- ALERTS -->
+  <section class="view" id="v-alert">
+    <h2>🔔 Preisalarme & Watchlist</h2>
+    <div id="alertList"></div>
+    <p class="note">Alarm setzen: Item antippen → „Alarm“. Geprüft wird bei jeder Live-Aktualisierung (jede Minute), solange die App offen ist. Bei Treffer: Hinweis, Vibration und – falls erlaubt – Systembenachrichtigung.</p>
+    <button class="btn sec" id="notifBtn">Benachrichtigungen erlauben</button>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-set">
+    <h2>⚙️ Einstellungen</h2>
+    <div class="form">
+      <label>Budget (z. B. 10m, 500k, 1.2b)<input id="budget" value="10m" inputmode="text"></label>
+      <label>Margen-Basis
+        <select id="mode">
+          <option value="safe">Konservativ (kleinere aus Live & 1h-Ø)</option>
+          <option value="live">Live (letzte Trades)</option>
+          <option value="avg">1h-Durchschnitt</option>
+        </select></label>
+      <label>Min. Handelsvolumen pro Stunde<input id="minVol" type="number" value="20" inputmode="numeric"></label>
+      <label>Min. ROI in %<input id="minRoi" type="number" value="0.5" step="0.1" inputmode="decimal"></label>
+      <label>Max. ROI in % (Ausreißer/Manipulation ausfiltern)<input id="maxRoi" type="number" value="30" inputmode="decimal"></label>
+      <label>Letzter Trade max. … Minuten alt<input id="maxAge" type="number" value="30" inputmode="numeric"></label>
+      <label>Anteil am Markt, den du realistisch füllst (%)<input id="share" type="number" value="10" inputmode="numeric"></label>
+      <label>Anzahl GE-Slots für den Plan<select id="slots"><option value="8">8 (Members)</option><option value="3">3 (F2P)</option><option value="6">6</option><option value="4">4</option></select></label>
+      <label class="chk"><input id="members" type="checkbox" checked> Members-Items einbeziehen</label>
+      <label class="chk"><input id="notifyTop" type="checkbox"> Melden, wenn ein neuer Flip in die Top 3 kommt</label>
+    </div>
+    <h2>📲 Als App installieren</h2>
+    <p class="note"><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br>
+    Daten: OSRS Wiki Real-time Prices (RuneLite-Crowdsourcing), Aktualisierung jede Minute. Steuer: 2 %, abgerundet, max. 5 M/Stück, keine Steuer unter 50 gp, Bonds steuerfrei. Margen sind vergangene Trades – prüf den Preis im Spiel, bevor du große Gebote setzt.</p>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-v="top" class="on"><span>🏆</span>Top</button>
+  <button data-v="trend"><span>📈</span>Trends</button>
+  <button data-v="all"><span>🔎</span>Alle</button>
+  <button data-v="alert"><span>🔔</span>Alarme</button>
+  <button data-v="set"><span>⚙️</span>Setup</button>
+</nav>
+
+<div id="sheet"><div class="sh" id="sh"></div></div>
+<div id="toast"></div>
+
+<script>
+// ---------- App-Icon & Manifest (alles in einer Datei) ----------
+(function(){
+  const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
+  g.fillStyle='#14110d';g.fillRect(0,0,512,512);g.fillStyle='#d9a441';g.beginPath();g.arc(256,256,200,0,7);g.fill();
+  g.fillStyle='#14110d';g.font='bold 210px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('GE',256,268);
+  const url=c.toDataURL('image/png');
+  document.getElementById('favicon').href=url;document.getElementById('touchicon').href=url;
+  const start=location.href.split('#')[0];
+  const man={name:'GE Flips – OSRS',short_name:'GE Flips',start_url:start,scope:start.replace(/[^/]*$/,''),display:'standalone',background_color:'#14110d',theme_color:'#14110d',icons:[{src:url,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+  document.getElementById('manifest').href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}));
+})();
+
+const API='https://prices.runescape.wiki/api/v1/osrs';
+const TAX_EXEMPT=new Set([13190]);
+const ICON=n=>'https://oldschool.runescape.wiki/images/'+encodeURIComponent(n.replace(/ /g,'_'));
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem('gef_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('gef_'+k,JSON.stringify(v))}catch(e){}}};
+
+let mapping=null,rows=[],scored=[],lastTs=0,prevTop=new Set(store.get('prevTop',[])),timer=null;
+let alerts=store.get('alerts',[]); // {id, below, above, fired}
+let trendMode='up',trendWin='trend1h',allSort='score';
+
+// ---------- Formatierung ----------
+function parseGp(s){s=String(s).trim().toLowerCase().replace(/[, _]/g,'');const m=s.match(/^([\d.]+)([kmb]?)$/);return m?Math.floor(parseFloat(m[1])*({'':1,k:1e3,m:1e6,b:1e9})[m[2]]):0}
+function gp(n){if(n==null||!isFinite(n))return'–';const a=Math.abs(n),s=n<0?'-':'';
+  if(a>=1e9)return s+(a/1e9).toFixed(2)+'b';if(a>=1e7)return s+(a/1e6).toFixed(1)+'m';if(a>=1e6)return s+(a/1e6).toFixed(2)+'m';
+  if(a>=1e5)return s+Math.round(a/1e3)+'k';return s+Math.round(a).toLocaleString('de-DE')}
+const full=n=>n==null||!isFinite(n)?'–':Math.round(n).toLocaleString('de-DE');
+const pct=(x,d=1)=>x==null||!isFinite(x)?'–':(x>0?'+':'')+(x*100).toFixed(d)+'%';
+const ago=s=>s==null?'–':s<60?s+' s':s<3600?Math.floor(s/60)+' min':Math.floor(s/3600)+' h';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tax=(id,p)=>TAX_EXEMPT.has(id)||p<50?0:Math.min(Math.floor(p*.02),5e6);
+const mid=o=>o&&o.avgHighPrice&&o.avgLowPrice?(o.avgHighPrice+o.avgLowPrice)/2:o?(o.avgHighPrice||o.avgLowPrice||null):null;
+
+async function getJSON(p){const r=await fetch(API+p,{cache:'no-store'});if(!r.ok)throw new Error(p+' → HTTP '+r.status);return r.json()}
+
+// ---------- Laden ----------
+async function load(){
+  setLive('load','lädt…');
+  try{
+    if(!mapping){const m=await getJSON('/mapping');mapping=new Map(m.map(i=>[i.id,i]))}
+    const [latest,m5,h1,d24]=await Promise.all([getJSON('/latest'),getJSON('/5m'),getJSON('/1h'),getJSON('/24h').catch(()=>null)]);
+    build(latest.data,m5.data,h1.data,d24?d24.data:null);
+    lastTs=Date.now();$('error').style.display='none';setLive('ok','LIVE · gerade eben');
+    renderAll();checkAlerts();checkNewTop();
+  }catch(e){
+    setLive('err','offline');
+    $('error').style.display='block';
+    $('error').innerHTML='<b>Live-Daten nicht erreichbar.</b> '+esc(e.message)+'<br>Prüfe die Internetverbindung. In manchen Vorschau-Fenstern (z. B. Datei-Vorschau) sind Web-Anfragen gesperrt – öffne die App dann im Browser.';
+  }
+}
+function setLive(c,t){$('dot').className='dot '+c;$('liveTxt').textContent=t}
+setInterval(()=>{if(lastTs)setLive('ok','LIVE · vor '+ago(Math.round((Date.now()-lastTs)/1000)))},5000);
+
+function build(latest,m5,h1,d24){
+  const now=Date.now()/1000;rows=[];
+  for(const[k,l]of Object.entries(latest)){
+    const id=+k,info=mapping.get(id);if(!info||!l.high||!l.low)continue;
+    const a1=h1[k]||{},a5=m5[k]||{},a24=d24?(d24[k]||{}):{};
+    const liveMargin=l.high-tax(id,l.high)-l.low;
+    const avgMargin=a1.avgLowPrice&&a1.avgHighPrice?a1.avgHighPrice-tax(id,a1.avgHighPrice)-a1.avgLowPrice:null;
+    const volHigh=a1.highPriceVolume||0,volLow=a1.lowPriceVolume||0;
+    const vol24=d24?(a24.highPriceVolume||0)+(a24.lowPriceVolume||0):null;
+    const vol5=(a5.highPriceVolume||0)+(a5.lowPriceVolume||0);
+    const liveMid=(l.high+l.low)/2,m5mid=mid(a5),h1mid=mid(a1),d24mid=mid(a24);
+    rows.push({id,name:info.name,icon:info.icon,members:info.members,limit:info.limit||null,
+      liveBuy:l.low,liveSell:l.high,liveMargin,avgBuy:a1.avgLowPrice,avgSell:a1.avgHighPrice,avgMargin,
+      volHigh,volLow,vol:volHigh+volLow,vol24,vol5,
+      volSpike:vol24?(vol5*288)/(vol24||1):null,
+      trend1h:h1mid?((m5mid||liveMid)-h1mid)/h1mid:null,
+      trend24h:d24mid?(liveMid-d24mid)/d24mid:null,
+      age:Math.max(0,Math.round(now-Math.min(l.highTime||0,l.lowTime||0)))});
+  }
+}
+
+function cfg(){return{budget:parseGp($('budget').value)||0,mode:$('mode').value,minVol:+$('minVol').value||0,
+  minRoi:(+$('minRoi').value||0)/100,maxRoi:(+$('maxRoi').value||1e9)/100,maxAge:(+$('maxAge').value||1e9)*60,
+  share:Math.min(1,Math.max(.01,(+$('share').value||10)/100)),members:$('members').checked,slots:+$('slots').value||8}}
+
+function compute(r,c){
+  let buy,sell;
+  if(c.mode==='live'||r.avgMargin==null){buy=r.liveBuy;sell=r.liveSell}
+  else if(c.mode==='avg'){buy=r.avgBuy;sell=r.avgSell}
+  else if(r.avgMargin<r.liveMargin){buy=r.avgBuy;sell=r.avgSell}else{buy=r.liveBuy;sell=r.liveSell}
+  const t=tax(r.id,sell),margin=sell-t-buy,roi=margin/buy;
+  const byVol=Math.floor(Math.min(r.volHigh,r.volLow)*4*c.share),byBud=Math.floor(c.budget/buy),byLim=r.limit||Infinity;
+  const cap=Math.max(0,Math.min(byVol,byLim)),qty=Math.max(0,Math.min(byVol,byBud,byLim));
+  const constraint=qty===byLim?'Limit':qty===byBud?'Budget':'Volumen';
+  const profit4h=qty*margin;
+  // Verlässlichkeit 0..1
+  let rel=1;
+  if(r.avgMargin!=null&&r.liveMargin>0){rel*=Math.max(0,Math.min(1,r.avgMargin/r.liveMargin))**.5}else if(r.avgMargin==null)rel*=.6;
+  rel*=r.age<600?1:r.age<1800?.8:.55;
+  if(roi>.15)rel*=.5;
+  if(r.trend1h!=null&&r.trend1h<-.03)rel*=.7; // fallendes Messer
+  const balance=Math.min(r.volHigh,r.volLow)/Math.max(1,Math.max(r.volHigh,r.volLow));
+  rel*=.6+.4*balance;
+  return Object.assign({},r,{buy,sell,tax:t,margin,roi,qty,cap,constraint,profit4h,capital:qty*buy,rel,score:profit4h*rel});
+}
+
+function renderAll(){
+  if(!rows.length)return;
+  const c=cfg();
+  const all=rows.filter(r=>c.members||!r.members).map(r=>compute(r,c));
+  scored=all;
+  const flips=all.filter(r=>r.margin>0&&r.vol>=c.minVol&&r.age<=c.maxAge&&r.roi>=c.minRoi&&r.roi<=c.maxRoi&&r.qty>0).sort((a,b)=>b.score-a.score);
+
+  const plan=makePlan(flips,c);
+  const tp=plan.reduce((s,p)=>s+p.pprof,0),tc=plan.reduce((s,p)=>s+p.pcap,0);
+  $('budgetParsed').textContent=c.budget?'= '+full(c.budget)+' gp':'ungültig';
+  $('barFill').style.width=(c.budget?Math.min(100,tc/c.budget*100):0)+'%';
+  $('budgetUse').innerHTML=`<span>Eingesetzt: <b>${gp(tc)}</b></span><span>Frei: <b>${gp(Math.max(0,c.budget-tc))}</b></span>`;
+  $('summary').innerHTML=`
+    <div class="stat"><div class="k">Erw. Gewinn / 4 h</div><div class="v">${gp(tp)}</div><div class="s">${tc?pct(tp/tc,2):'–'} auf ${gp(tc)}</div></div>
+    <div class="stat"><div class="k">Pro Tag (6×4 h)</div><div class="v">${gp(tp*6)}</div><div class="s">wenn alles füllt</div></div>`;
+  $('topInfo').textContent='aus '+flips.length+' Kandidaten';
+  const planIds=new Set(plan.map(p=>p.id));
+  const rest=flips.filter(r=>!planIds.has(r.id)).slice(0,12);
+  $('topList').innerHTML=(plan.length?plan.map((p,i)=>slotCard(p,i+1)).join('')+(plan.length<c.slots?`<div class="empty">Nur ${plan.length} von ${c.slots} Slots befüllbar – Budget erhöhen oder Filter lockern.</div>`:''):'<div class="empty">Keine passenden Flips – Budget oder Filter im Setup anpassen.</div>')+
+    (rest.length?'<h2>Weitere gute Kandidaten</h2>'+rest.map(r=>card(r)).join(''):'');
+  renderTrends();renderAllList();renderAlerts();
+  store.set('topNow',plan.slice(0,3).map(p=>p.id));
+}
+
+// Bis zu N verschiedene Items: erst gleichmäßig Budget pro Slot, dann Rest an die stärksten verteilen
+function makePlan(flips,c){
+  const S=c.slots,B=c.budget,share=B/S;
+  const pick=flips.map(r=>{const q=Math.min(r.cap,Math.floor(share/r.buy));return{r,q,val:q*r.margin*r.rel}})
+    .filter(x=>x.q>0&&x.val>0).sort((a,b)=>b.val-a.val).slice(0,S).map(x=>Object.assign({},x.r,{pq:x.q}));
+  let left=B-pick.reduce((s,p)=>s+p.pq*p.buy,0);
+  for(const p of pick.slice().sort((a,b)=>b.roi*b.rel-a.roi*a.rel)){
+    const add=Math.min(p.cap-p.pq,Math.floor(left/p.buy));if(add>0){p.pq+=add;left-=add*p.buy}}
+  pick.forEach(p=>{p.pcap=p.pq*p.buy;p.pprof=p.pq*p.margin});
+  return pick.sort((a,b)=>b.pprof-a.pprof);
+}
+function slotCard(p,n){
+  const tr=p.trend1h!=null?`<span class="pill ${p.trend1h>0?'g':p.trend1h<0?'r':''}">${p.trend1h>0?'▲':p.trend1h<0?'▼':'•'} ${pct(p.trend1h)}</span>`:'';
+  const relTxt=p.rel>.8?'<span class="pill g">verlässlich</span>':p.rel<.45?'<span class="pill r">riskant</span>':'';
+  const fresh=!prevTop.has(p.id)&&n<=3&&prevTop.size?'<span class="pill y">NEU</span>':'';
+  return `<div class="card slot" data-id="${p.id}">
+    <img loading="lazy" src="${ICON(p.icon)}" alt="" onerror="this.style.visibility='hidden'">
+    <div class="n"><span class="muted" style="font-weight:400">Slot ${n} ·</span> ${esc(p.name)}</div><div class="p up">+${gp(p.pprof)}</div>
+    <div class="d">${pct(p.roi,2)} · ${gp(p.margin)} Gewinn/Stk</div><div class="r muted">Kapital ${gp(p.pcap)}</div>
+    <div class="order buy"><b>KAUFEN</b><span>${full(p.pq)} ×</span><span>${full(p.buy)} gp</span></div>
+    <div class="order sell"><b>VERKAUFEN</b><span>${full(p.pq)} ×</span><span>${full(p.sell)} gp</span></div>
+    <div class="row3"><span class="pill">Limit ${p.limit?full(p.limit):'?'}/4h</span><span class="pill">Vol ${gp(p.vol)}/h</span>${tr}${relTxt}${fresh}</div></div>`;
+}
+function card(r,o={}){
+  const fresh=!prevTop.has(r.id)&&o.rank&&o.rank<=3&&prevTop.size?'<span class="pill y">NEU</span>':'';
+  const relTxt=r.rel>.8?'<span class="pill g">verlässlich</span>':r.rel<.45?'<span class="pill r">riskant</span>':'';
+  const tr=r.trend1h!=null?`<span class="pill ${r.trend1h>0?'g':r.trend1h<0?'r':''}">${r.trend1h>0?'▲':r.trend1h<0?'▼':'•'} ${pct(r.trend1h)}</span>`:'';
+  const q=o.qty??r.qty,pr=o.prof??r.profit4h;
+  return `<div class="card ${o.rank?'rank':''}" ${o.rank?`data-rank="${o.rank}"`:''} data-id="${r.id}">
+    <img loading="lazy" src="${ICON(r.icon)}" alt="" onerror="this.style.visibility='hidden'">
+    <div class="n">${esc(r.name)}</div><div class="p ${pr>0?'up':'down'}">${gp(pr)}</div>
+    <div class="d">Kauf ${gp(r.buy)} → Verk. ${gp(r.sell)}</div><div class="r">${full(q)} Stk · ${pct(r.roi,1)}</div>
+    <div class="row3"><span class="pill">+${gp(r.margin)}/Stk</span><span class="pill">Vol ${gp(r.vol)}/h</span><span class="pill">Limit ${r.limit?gp(r.limit):'?'}</span>${tr}${relTxt}${fresh}</div></div>`;
+}
+
+function renderTrends(){
+  const c=cfg();
+  let list=scored.filter(r=>r.vol>=Math.max(c.minVol,30)&&r.age<=c.maxAge&&r.buy>=50);
+  if(trendMode==='vol')list=list.filter(r=>r.volSpike!=null&&r.vol24>200).sort((a,b)=>b.volSpike-a.volSpike);
+  else{list=list.filter(r=>r[trendWin]!=null);list.sort((a,b)=>trendMode==='up'?b[trendWin]-a[trendWin]:a[trendWin]-b[trendWin])}
+  $('trendList').innerHTML=list.slice(0,30).map(r=>{
+    const v=trendMode==='vol'?'×'+r.volSpike.toFixed(1)+' Vol.':pct(r[trendWin]);
+    const cls=trendMode==='vol'?'':r[trendWin]>0?'up':'down';
+    return `<div class="card" data-id="${r.id}"><img loading="lazy" src="${ICON(r.icon)}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="n">${esc(r.name)}</div><div class="p ${cls}">${v}</div>
+      <div class="d">Preis ${gp((r.liveBuy+r.liveSell)/2)} · Vol ${gp(r.vol)}/h</div><div class="r ${r.margin>0?'up':'down'}">${gp(r.margin)}/Stk</div></div>`}).join('')||'<div class="empty">Keine Daten.</div>';
+}
+
+function renderAllList(){
+  const q=$('search').value.trim().toLowerCase(),c=cfg();
+  let list=scored.filter(r=>!q||r.name.toLowerCase().includes(q));
+  if(!q)list=list.filter(r=>r.vol>=c.minVol&&r.margin>0);
+  list.sort((a,b)=>(b[allSort]??-Infinity)-(a[allSort]??-Infinity));
+  $('allList').innerHTML=list.slice(0,100).map(r=>card(r)).join('')||'<div class="empty">Nichts gefunden.</div>';
+}
+
+// ---------- Alarme ----------
+function renderAlerts(){
+  if(!alerts.length){$('alertList').innerHTML='<div class="empty">Noch keine Alarme. Tipp ein Item an und wähle „Alarm“.</div>';return}
+  $('alertList').innerHTML=alerts.map((a,i)=>{const r=scored.find(x=>x.id===a.id);const info=mapping&&mapping.get(a.id);
+    return `<div class="card" data-id="${a.id}"><img src="${info?ICON(info.icon):''}" alt="" onerror="this.style.visibility='hidden'">
+    <div class="n">${esc(info?info.name:a.id)}</div><div class="p">${r?gp(r.liveBuy)+' / '+gp(r.liveSell):'–'}</div>
+    <div class="d">${a.below?'≤ '+gp(a.below):''}${a.below&&a.above?' · ':''}${a.above?'≥ '+gp(a.above):''}${!a.below&&!a.above?'nur Watchlist':''}${a.fired?' · ✅ ausgelöst':''}</div>
+    <div class="r"><button class="iconbtn" data-del="${i}">✕</button></div></div>`}).join('');
+}
+function checkAlerts(){
+  let changed=false;
+  for(const a of alerts){const r=rows.find(x=>x.id===a.id);if(!r)continue;
+    const hitB=a.below&&r.liveBuy<=a.below,hitA=a.above&&r.liveSell>=a.above;
+    if((hitB||hitA)&&!a.fired){a.fired=true;changed=true;notify('🔔 '+r.name,hitB?`Preis gefallen auf ${gp(r.liveBuy)} (Ziel ≤ ${gp(a.below)})`:`Preis gestiegen auf ${gp(r.liveSell)} (Ziel ≥ ${gp(a.above)})`)}
+    else if(!hitB&&!hitA&&a.fired){a.fired=false;changed=true}}
+  if(changed){store.set('alerts',alerts);renderAlerts()}
+}
+function checkNewTop(){
+  const now=store.get('topNow',[]);
+  if($('notifyTop').checked&&prevTop.size){const n=now.filter(id=>!prevTop.has(id));
+    if(n.length){const r=scored.find(x=>x.id===n[0]);if(r)notify('🏆 Neuer Top-Flip: '+r.name,`${gp(r.margin)}/Stk · ${pct(r.roi,1)} · ~${gp(r.profit4h)} in 4 h`)}}
+  prevTop=new Set(now);store.set('prevTop',now);
+}
+function notify(title,body){
+  toast(`<b>${esc(title)}</b><br>${esc(body)}`);
+  try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}
+  try{if('Notification'in window&&Notification.permission==='granted')new Notification(title,{body,icon:$('favicon').href})}catch(e){}
+}
+let tt;function toast(h){const t=$('toast');t.innerHTML=h;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',6000)}
+
+// ---------- Detail-Sheet ----------
+async function openItem(id,step='5m'){
+  const r=scored.find(x=>x.id===id);if(!r)return;
+  const a=alerts.find(x=>x.id===id)||{};
+  $('sheet').classList.add('open');
+  $('sh').innerHTML=`<div class="top"><img src="${ICON(r.icon)}" style="width:30px;height:30px" alt="" onerror="this.remove()"><h3>${esc(r.name)}</h3><button class="iconbtn" id="closeS">✕</button></div>
+    <div class="grid">
+      <div class="stat"><div class="k">Kaufgebot</div><div class="v">${full(r.buy)}</div><div class="s">live ${full(r.liveBuy)}</div></div>
+      <div class="stat"><div class="k">Verkaufsgebot</div><div class="v">${full(r.sell)}</div><div class="s">live ${full(r.liveSell)}</div></div>
+      <div class="stat"><div class="k">Gewinn / Stk</div><div class="v ${r.margin>0?'up':'down'}">${full(r.margin)}</div><div class="s">Steuer ${full(r.tax)} · ROI ${pct(r.roi,2)}</div></div>
+      <div class="stat"><div class="k">Gewinn / 4 h</div><div class="v">${gp(r.profit4h)}</div><div class="s">${full(r.qty)} Stk · Grenze: ${r.constraint}</div></div>
+      <div class="stat"><div class="k">Volumen 1 h</div><div class="v">${full(r.vol)}</div><div class="s">Kauf ${full(r.volHigh)} / Verk. ${full(r.volLow)}</div></div>
+      <div class="stat"><div class="k">Trend</div><div class="v ${r.trend1h>0?'up':r.trend1h<0?'down':''}">${pct(r.trend1h)}</div><div class="s">24 h: ${pct(r.trend24h)} · Limit ${r.limit?full(r.limit):'?'}</div></div>
+    </div>
+    <div class="tf">${[['5m','30 h'],['1h','15 T'],['6h','90 T'],['24h','1 J']].map(([s,l])=>`<button data-step="${s}" class="${s===step?'on':''}">${l}</button>`).join('')}</div>
+    <div id="chart" class="muted" style="min-height:180px">Lade Preisverlauf…</div>
+    <p class="note"><span class="up">■</span> Instant-Buy &nbsp;<span class="down">■</span> Instant-Sell &nbsp;Balken = Volumen · Trust ${Math.round(r.rel*100)} %</p>
+    <h2>🔔 Alarm</h2>
+    <div class="alertrow"><input id="aBelow" placeholder="Kaufpreis ≤ (z. B. ${gp(Math.round(r.liveBuy*.97))})" value="${a.below?a.below:''}"><input id="aAbove" placeholder="Verkaufspreis ≥" value="${a.above?a.above:''}"></div>
+    <div class="alertrow" style="margin-top:8px"><button class="btn" id="aSave">Alarm / Watchlist speichern</button></div>`;
+  $('closeS').onclick=()=>$('sheet').classList.remove('open');
+  $('sh').querySelectorAll('.tf button').forEach(b=>b.onclick=()=>openItem(id,b.dataset.step));
+  $('aSave').onclick=()=>{const below=parseGp($('aBelow').value)||null,above=parseGp($('aAbove').value)||null;
+    alerts=alerts.filter(x=>x.id!==id);alerts.push({id,below,above,fired:false});store.set('alerts',alerts);renderAlerts();
+    toast('Gespeichert: '+esc(r.name));$('sheet').classList.remove('open');checkAlerts()};
+  try{const ts=await getJSON(`/timeseries?timestep=${step}&id=${id}`);$('chart').innerHTML=chartSVG(ts.data||[])}catch(e){$('chart').textContent='Verlauf nicht verfügbar.'}
+}
+function chartSVG(d){
+  d=d.filter(p=>p.avgHighPrice||p.avgLowPrice);if(d.length<2)return'Zu wenige Datenpunkte.';
+  const W=360,H=200,P={l:46,r:6,t:8,b:38},VH=30;
+  const x0=d[0].timestamp,x1=d[d.length-1].timestamp;
+  const vals=d.flatMap(p=>[p.avgHighPrice,p.avgLowPrice].filter(Boolean));let lo=Math.min(...vals),hi=Math.max(...vals);if(lo===hi){lo*=.99;hi*=1.01}
+  const vmax=Math.max(...d.map(p=>(p.highPriceVolume||0)+(p.lowPriceVolume||0)),1);
+  const X=t=>P.l+(t-x0)/(x1-x0||1)*(W-P.l-P.r),Y=v=>P.t+(1-(v-lo)/(hi-lo))*(H-P.t-P.b);
+  const line=k=>{let s='',pen=false;for(const p of d){if(!p[k]){pen=false;continue}s+=(pen?'L':'M')+X(p.timestamp).toFixed(1)+','+Y(p[k]).toFixed(1);pen=true}return s};
+  const bw=Math.max(.6,(W-P.l-P.r)/d.length-.4);
+  const bars=d.map(p=>{const h=((p.highPriceVolume||0)+(p.lowPriceVolume||0))/vmax*VH;return`<rect x="${(X(p.timestamp)-bw/2).toFixed(1)}" y="${(H-P.b+18+VH-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="#6b5a3a"/>`}).join('');
+  let g='';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="#3a3124"/><text x="${P.l-4}" y="${y+4}" text-anchor="end">${gp(v)}</text>`}
+  for(let i=0;i<=2;i++){const t=x0+(x1-x0)*i/2,dt=new Date(t*1000);g+=`<text x="${X(t)}" y="${H-P.b+13}" text-anchor="${['start','middle','end'][i]}">${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} ${dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</text>`}
+  return`<svg viewBox="0 0 ${W} ${H+VH-12}" width="100%">${g}${bars}<path d="${line('avgHighPrice')}" fill="none" stroke="#4fc07a" stroke-width="1.4"/><path d="${line('avgLowPrice')}" fill="none" stroke="#e5655a" stroke-width="1.4"/></svg>`;
+}
+
+// ---------- Events ----------
+document.addEventListener('click',e=>{
+  const nb=e.target.closest('#nav button');
+  if(nb){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b===nb));
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+nb.dataset.v));window.scrollTo(0,0);return}
+  const del=e.target.closest('[data-del]');
+  if(del){alerts.splice(+del.dataset.del,1);store.set('alerts',alerts);renderAlerts();e.stopPropagation();return}
+  const ts=e.target.closest('#trendSeg button');if(ts){trendMode=ts.dataset.t;segOn('#trendSeg',ts);renderTrends();return}
+  const tw=e.target.closest('#trendWin button');if(tw){trendWin=tw.dataset.w;segOn('#trendWin',tw);renderTrends();return}
+  const as=e.target.closest('#allSort button');if(as){allSort=as.dataset.s;segOn('#allSort',as);renderAllList();return}
+  const cd=e.target.closest('.card[data-id]');if(cd){openItem(+cd.dataset.id);return}
+  if(e.target.id==='sheet')$('sheet').classList.remove('open');
+});
+function segOn(sel,btn){document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on',b===btn))}
+$('search').addEventListener('input',renderAllList);
+$('refresh').onclick=load;
+$('notifBtn').onclick=async()=>{try{if(!('Notification'in window))return toast('Dieses Gerät unterstützt keine Web-Benachrichtigungen – Hinweise kommen als Einblendung + Vibration.');
+  const p=await Notification.requestPermission();toast(p==='granted'?'Benachrichtigungen aktiv ✅':'Nicht erlaubt – Hinweise kommen als Einblendung.')}catch(e){toast('Benachrichtigungen nicht verfügbar.')}};
+const SETTINGS=['slots','budget','mode','minVol','minRoi','maxRoi','maxAge','share','members','notifyTop'];
+const saved=store.get('settings',{});
+SETTINGS.forEach(k=>{const el=$(k);if(k in saved){if(el.type==='checkbox')el.checked=saved[k];else el.value=saved[k]}
+  el.addEventListener('input',()=>{const s={};SETTINGS.forEach(j=>{const x=$(j);s[j]=x.type==='checkbox'?x.checked:x.value});store.set('settings',s);renderAll()})});
+// Budget-Feld oben <-> Setup synchron halten
+$('budgetTop').value=$('budget').value;
+function setBudget(v){$('budget').value=v;$('budget').dispatchEvent(new Event('input'))}
+$('budgetTop').addEventListener('input',()=>setBudget($('budgetTop').value));
+$('budget').addEventListener('input',()=>{if(document.activeElement!==$('budgetTop'))$('budgetTop').value=$('budget').value});
+document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{$('budgetTop').value=b.dataset.b;setBudget(b.dataset.b)});
+// Live: jede Minute, und sofort wenn die App wieder in den Vordergrund kommt
+function start(){clearInterval(timer);timer=setInterval(()=>{if(!document.hidden)load()},60000)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-lastTs>30000)load()});
+load();start();
+</script>
+</body>
+</html>
