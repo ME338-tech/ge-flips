@@ -59,6 +59,17 @@ h2 small{font-weight:400;color:var(--muted);font-size:12px}
 .quick button{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
 .bar{height:8px;background:var(--panel2);border-radius:6px;margin-top:10px;overflow:hidden}#barFill{height:100%;width:0;background:var(--accent);transition:width .3s}
 .bused{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:5px}.bused b{color:var(--text)}
+.acts{grid-column:1/-1;display:flex;gap:8px;margin-top:6px}
+.acts button{flex:1;border-radius:8px;padding:8px;font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+.acts button.go{background:var(--accent);color:#1b1408;border-color:var(--accent)}
+.acts button.x{flex:0 0 42px}
+#openBadge{font-style:normal;position:absolute;margin-left:22px;margin-top:-2px;background:var(--accent);color:#1b1408;border-radius:9px;font-size:10px;font-weight:700;padding:0 5px}
+#openBadge:empty{display:none}
+nav button{position:relative}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.formgrid label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.preview{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;font-size:14px}
+.lim{display:flex;justify-content:space-between;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px;font-size:14px}
 .rank{position:relative}.rank::before{content:attr(data-rank);position:absolute;left:-4px;top:-4px;background:var(--accent);color:#1b1408;font-size:10px;font-weight:700;border-radius:10px;padding:0 5px}
 .up{color:var(--up)}.down{color:var(--down)}.muted{color:var(--muted)}
 .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px;margin-bottom:10px}
@@ -108,10 +119,27 @@ svg text{fill:var(--muted);font-size:11px}
       <div class="bar"><div id="barFill"></div></div>
       <div class="bused" id="budgetUse"></div>
     </div>
+    <div id="openTopWrap" style="display:none"><h2>📦 Deine offenen Flips <small id="openTopInfo"></small></h2><div id="openList"></div></div>
     <div class="summary" id="summary"></div>
     <h2>🎯 Dein Slot-Plan <small id="topInfo"></small></h2>
     <div id="topList"></div>
     <p class="note">Die App bewertet jede Minute alle Items automatisch: erwarteter Gewinn in 4 h (Marge nach 2 % Steuer × machbare Menge aus Budget, Buy-Limit und Volumen), gewichtet nach Verlässlichkeit (Live-Marge passt zum Stunden-Ø, frische Trades, kein Ausreißer-ROI). Der Slot-Plan wählt automatisch die besten Items für deine GE-Slots: Zuerst bekommt jeder Slot den gleichen Anteil am Budget, übriges Geld geht an die Items mit dem besten Verhältnis aus ROI und Verlässlichkeit – nie über Buy-Limit oder realistisches Volumen hinaus. Kaufmenge = Verkaufsmenge. Tipp: Für schnellere Füllung 1 gp über dem Kaufpreis bieten bzw. 1 gp unter dem Verkaufspreis anbieten.</p>
+  </section>
+
+  <!-- FLIPS / JOURNAL -->
+  <section class="view" id="v-flips">
+    <div class="seg" id="perSeg"><button data-p="1" class="on">Heute</button><button data-p="7">7 Tage</button><button data-p="30">30 Tage</button><button data-p="0">Gesamt</button></div>
+    <div class="summary" id="jStats"></div>
+    <h2>📦 Offene Flips <small id="openInfo"></small></h2>
+    <div id="openList2"></div>
+    <h2>⏳ Buy-Limits (4 h) <small>ab dem ersten Kauf</small></h2>
+    <div id="limitList"></div>
+    <h2>✅ Abgeschlossene Flips</h2>
+    <div id="histList"></div>
+    <h2>💾 Sicherung</h2>
+    <p class="note" style="margin-top:0">Deine Flips liegen nur auf diesem Gerät. Mit „Kopieren“ sicherst du sie als Text (z. B. in Notizen), mit „Einfügen“ stellst du sie wieder her.</p>
+    <div class="alertrow"><button class="btn sec" id="expBtn">Kopieren</button><button class="btn sec" id="impBtn">Einfügen</button></div>
+    <textarea id="impTxt" placeholder="Gesicherten Text hier einfügen und nochmal „Einfügen“ tippen" style="display:none;width:100%;min-height:90px;margin-top:8px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:13px"></textarea>
   </section>
 
   <!-- TRENDS -->
@@ -170,6 +198,7 @@ svg text{fill:var(--muted);font-size:11px}
 
 <nav id="nav">
   <button data-v="top" class="on"><span>🏆</span>Top</button>
+  <button data-v="flips"><span>📒</span>Flips<i id="openBadge"></i></button>
   <button data-v="trend"><span>📈</span>Trends</button>
   <button data-v="all"><span>🔎</span>Alle</button>
   <button data-v="alert"><span>🔔</span>Alarme</button>
@@ -265,7 +294,8 @@ function compute(r,c){
   else if(c.mode==='avg'){buy=r.avgBuy;sell=r.avgSell}
   else if(r.avgMargin<r.liveMargin){buy=r.avgBuy;sell=r.avgSell}else{buy=r.liveBuy;sell=r.liveSell}
   const t=tax(r.id,sell),margin=sell-t-buy,roi=margin/buy;
-  const byVol=Math.floor(Math.min(r.volHigh,r.volLow)*4*c.share),byBud=Math.floor(c.budget/buy),byLim=r.limit||Infinity;
+  const used=(limitUse.get(r.id)||{}).used||0;
+  const byVol=Math.floor(Math.min(r.volHigh,r.volLow)*4*c.share),byBud=Math.floor(c.budget/buy),byLim=r.limit?Math.max(0,r.limit-used):Infinity;
   const cap=Math.max(0,Math.min(byVol,byLim)),qty=Math.max(0,Math.min(byVol,byBud,byLim));
   const constraint=qty===byLim?'Limit':qty===byBud?'Budget':'Volumen';
   const profit4h=qty*margin;
@@ -282,7 +312,7 @@ function compute(r,c){
 
 function renderAll(){
   if(!rows.length)return;
-  const c=cfg();
+  const c=cfg();limitUse=calcLimits();
   const all=rows.filter(r=>c.members||!r.members).map(r=>compute(r,c));
   scored=all;
   const flips=all.filter(r=>r.margin>0&&r.vol>=c.minVol&&r.age<=c.maxAge&&r.roi>=c.minRoi&&r.roi<=c.maxRoi&&r.qty>0).sort((a,b)=>b.score-a.score);
@@ -300,7 +330,7 @@ function renderAll(){
   const rest=flips.filter(r=>!planIds.has(r.id)).slice(0,12);
   $('topList').innerHTML=(plan.length?plan.map((p,i)=>slotCard(p,i+1)).join('')+(plan.length<c.slots?`<div class="empty">Nur ${plan.length} von ${c.slots} Slots befüllbar – Budget erhöhen oder Filter lockern.</div>`:''):'<div class="empty">Keine passenden Flips – Budget oder Filter im Setup anpassen.</div>')+
     (rest.length?'<h2>Weitere gute Kandidaten</h2>'+rest.map(r=>card(r)).join(''):'');
-  renderTrends();renderAllList();renderAlerts();
+  renderTrends();renderAllList();renderAlerts();renderJournal();
   store.set('topNow',plan.slice(0,3).map(p=>p.id));
 }
 
@@ -325,7 +355,8 @@ function slotCard(p,n){
     <div class="d">${pct(p.roi,2)} · ${gp(p.margin)} Gewinn/Stk</div><div class="r muted">Kapital ${gp(p.pcap)}</div>
     <div class="order buy"><b>KAUFEN</b><span>${full(p.pq)} ×</span><span>${full(p.buy)} gp</span></div>
     <div class="order sell"><b>VERKAUFEN</b><span>${full(p.pq)} ×</span><span>${full(p.sell)} gp</span></div>
-    <div class="row3"><span class="pill">Limit ${p.limit?full(p.limit):'?'}/4h</span><span class="pill">Vol ${gp(p.vol)}/h</span>${tr}${relTxt}${fresh}</div></div>`;
+    <div class="row3"><span class="pill">Limit ${p.limit?full(p.limit):'?'}/4h</span><span class="pill">Vol ${gp(p.vol)}/h</span>${tr}${relTxt}${fresh}${limitPill(p.id)}</div>
+    <div class="acts"><button class="go" data-bought="${p.id}" data-q="${p.pq}" data-pr="${p.buy}">✅ Gekauft eintragen</button></div></div>`;
 }
 function card(r,o={}){
   const fresh=!prevTop.has(r.id)&&o.rank&&o.rank<=3&&prevTop.size?'<span class="pill y">NEU</span>':'';
@@ -358,6 +389,100 @@ function renderAllList(){
   if(!q)list=list.filter(r=>r.vol>=c.minVol&&r.margin>0);
   list.sort((a,b)=>(b[allSort]??-Infinity)-(a[allSort]??-Infinity));
   $('allList').innerHTML=list.slice(0,100).map(r=>card(r)).join('')||'<div class="empty">Nichts gefunden.</div>';
+}
+
+// ---------- Flip-Verfolgung ----------
+let trades=store.get('trades',[]),limitUse=new Map(),period=1;
+const H4=4*3600*1000;
+const saveTrades=()=>store.set('trades',trades);
+const itemInfo=id=>(mapping&&mapping.get(id))||{name:'Item '+id,icon:'',limit:null};
+const live=id=>rows.find(x=>x.id===id);
+function calcLimits(){
+  const now=Date.now(),m=new Map();
+  for(const t of trades){if(now-t.buyTime>=H4)continue;const e=m.get(t.id)||{used:0,first:t.buyTime};e.used+=t.qty;e.first=Math.min(e.first,t.buyTime);m.set(t.id,e)}
+  for(const[id,e]of m)e.reset=e.first+H4;
+  return m;
+}
+function dur(ms,up=true){const t=Math.max(0,(up?Math.ceil:Math.floor)(ms/60000)),h=Math.floor(t/60),m=t%60;return h?`${h} h ${m} min`:`${m} min`}
+function limitPill(id){const e=limitUse.get(id);if(!e)return'';const lim=itemInfo(id).limit;return`<span class="pill y">${full(e.used)}${lim?'/'+full(lim):''} gekauft · frei in ${dur(e.reset-Date.now())}</span>`}
+function tradeProfit(t){return t.sellPrice==null?null:(t.sellPrice-tax(t.id,t.sellPrice)-t.buyPrice)*t.qty}
+
+function openCard(t){
+  const r=live(t.id),info=itemInfo(t.id);
+  const cur=r?r.liveSell:null,est=cur!=null?(cur-tax(t.id,cur)-t.buyPrice)*t.qty:null;
+  return`<div class="card" data-id="${t.id}">
+    <img loading="lazy" src="${ICON(info.icon)}" alt="" onerror="this.style.visibility='hidden'">
+    <div class="n">${esc(info.name)}</div><div class="p ${est>0?'up':est<0?'down':''}">${est!=null?(est>0?'+':'')+gp(est):'–'}</div>
+    <div class="d">${full(t.qty)} × ${full(t.buyPrice)} gp · vor ${dur(Date.now()-t.buyTime,false)}</div><div class="r muted">jetzt ${cur!=null?full(cur):'–'}</div>
+    <div class="row3"><span class="pill">Ziel ${full(t.target||cur)}</span><span class="pill">Kapital ${gp(t.qty*t.buyPrice)}</span>${limitPill(t.id)}</div>
+    <div class="acts"><button class="go" data-sold="${t.tid}">💰 Verkauft eintragen</button><button class="x" data-tdel="${t.tid}" aria-label="Löschen">✕</button></div></div>`;
+}
+function renderJournal(){
+  limitUse=calcLimits();
+  const open=trades.filter(t=>t.sellPrice==null),done=trades.filter(t=>t.sellPrice!=null).sort((a,b)=>b.sellTime-a.sellTime);
+  const tied=open.reduce((s,t)=>s+t.qty*t.buyPrice,0);
+  $('openBadge').textContent=open.length||'';
+  const oc=open.sort((a,b)=>a.buyTime-b.buyTime).map(openCard).join('');
+  $('openTopWrap').style.display=open.length?'block':'none';
+  $('openList').innerHTML=oc;$('openTopInfo').textContent=gp(tied)+' gebunden';
+  $('openList2').innerHTML=oc||'<div class="empty">Keine offenen Flips. Tipp im Slot-Plan auf „Gekauft eintragen“.</div>';
+  $('openInfo').textContent=open.length?gp(tied)+' gebunden':'';
+  // Statistik
+  const since=period?Date.now()-period*86400000:0;
+  const inP=done.filter(t=>t.sellTime>=since);
+  const prof=inP.reduce((s,t)=>s+tradeProfit(t),0),cap=inP.reduce((s,t)=>s+t.qty*t.buyPrice,0);
+  const taxSum=inP.reduce((s,t)=>s+tax(t.id,t.sellPrice)*t.qty,0),wins=inP.filter(t=>tradeProfit(t)>0).length;
+  const best=inP.slice().sort((a,b)=>tradeProfit(b)-tradeProfit(a))[0];
+  $('jStats').innerHTML=`
+    <div class="stat"><div class="k">Gewinn</div><div class="v ${prof<0?'down':''}">${prof>0?'+':''}${gp(prof)}</div><div class="s">${inP.length} Flips · ${cap?pct(prof/cap,2):'–'} ROI</div></div>
+    <div class="stat"><div class="k">Trefferquote</div><div class="v">${inP.length?Math.round(wins/inP.length*100)+' %':'–'}</div><div class="s">Steuer bezahlt ${gp(taxSum)}</div></div>
+    <div class="stat"><div class="k">Bester Flip</div><div class="v" style="font-size:15px">${best?esc(itemInfo(best.id).name):'–'}</div><div class="s">${best?'+'+gp(tradeProfit(best)):''}</div></div>
+    <div class="stat"><div class="k">Gebunden</div><div class="v">${gp(tied)}</div><div class="s">${open.length} offene Flips</div></div>`;
+  // Limits
+  const lims=[...limitUse.entries()].sort((a,b)=>a[1].reset-b[1].reset);
+  $('limitList').innerHTML=lims.map(([id,e])=>{const lim=itemInfo(id).limit;return`<div class="lim"><span>${esc(itemInfo(id).name)}</span><span class="muted">${full(e.used)}${lim?' / '+full(lim):''} · frei in <b style="color:var(--text)">${dur(e.reset-Date.now())}</b></span></div>`}).join('')||'<div class="empty">Keine Limits aktiv.</div>';
+  // Verlauf
+  $('histList').innerHTML=done.slice(0,60).map(t=>{const pr=tradeProfit(t),info=itemInfo(t.id),d=new Date(t.sellTime);
+    return`<div class="card" data-id="${t.id}"><img loading="lazy" src="${ICON(info.icon)}" alt="" onerror="this.style.visibility='hidden'">
+    <div class="n">${esc(info.name)}</div><div class="p ${pr>0?'up':pr<0?'down':''}">${pr>0?'+':''}${gp(pr)}</div>
+    <div class="d">${full(t.qty)} × ${full(t.buyPrice)} → ${full(t.sellPrice)}</div><div class="r muted">${d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} ${d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</div>
+    <div class="acts"><button class="x" data-tdel="${t.tid}" style="flex:0 0 auto;padding:4px 10px;font-weight:400">✕ löschen</button></div></div>`}).join('')||'<div class="empty">Noch keine abgeschlossenen Flips.</div>';
+}
+setInterval(()=>{if(trades.length&&!document.hidden)renderJournal()},60000);
+
+function sheet(html){$('sheet').classList.add('open');$('sh').innerHTML=html;$('sh').querySelector('[data-close]').onclick=()=>$('sheet').classList.remove('open')}
+function openBuyForm(id,q,pr){
+  const info=itemInfo(id),r=scored.find(x=>x.id===id);
+  sheet(`<div class="top"><img src="${ICON(info.icon)}" style="width:30px;height:30px" alt="" onerror="this.remove()"><h3>Kauf eintragen</h3><button class="iconbtn" data-close>✕</button></div>
+    <div class="n" style="font-weight:600">${esc(info.name)}</div>
+    <div class="formgrid"><label>Gekaufte Menge<input id="fQty" inputmode="numeric" value="${q}"></label><label>Kaufpreis / Stk<input id="fPr" inputmode="numeric" value="${pr}"></label>
+    <label style="grid-column:1/-1">Geplanter Verkaufspreis<input id="fTg" inputmode="numeric" value="${r?r.sell:''}"></label></div>
+    <div class="preview" id="fPrev"></div>
+    <button class="btn" id="fSave">Speichern</button>
+    <p class="note">Tipp: Trag die tatsächlich gefüllte Menge ein – bei Teil-Füllung einfach die gekaufte Anzahl.</p>`);
+  const upd=()=>{const qq=parseGp($('fQty').value),pp=parseGp($('fPr').value),tg=parseGp($('fTg').value);
+    $('fPrev').innerHTML=`Kapital: <b>${gp(qq*pp)}</b> · erwarteter Gewinn: <b class="${tg-tax(id,tg)-pp>0?'up':'down'}">${gp((tg-tax(id,tg)-pp)*qq)}</b>`};
+  ['fQty','fPr','fTg'].forEach(k=>$(k).addEventListener('input',upd));upd();
+  $('fSave').onclick=()=>{const qq=parseGp($('fQty').value),pp=parseGp($('fPr').value);if(!qq||!pp)return toast('Menge und Preis eingeben.');
+    trades.push({tid:Date.now().toString(36)+Math.random().toString(36).slice(2,6),id,qty:qq,buyPrice:pp,target:parseGp($('fTg').value)||null,buyTime:Date.now()});
+    saveTrades();$('sheet').classList.remove('open');toast(`Gespeichert: ${full(qq)} × ${esc(info.name)}`);renderAll();renderJournal()};
+}
+function openSellForm(tid){
+  const t=trades.find(x=>x.tid===tid);if(!t)return;const info=itemInfo(t.id),r=live(t.id);
+  sheet(`<div class="top"><img src="${ICON(info.icon)}" style="width:30px;height:30px" alt="" onerror="this.remove()"><h3>Verkauf eintragen</h3><button class="iconbtn" data-close>✕</button></div>
+    <div class="n" style="font-weight:600">${esc(info.name)} <span class="muted" style="font-weight:400">· gekauft ${full(t.qty)} × ${full(t.buyPrice)}</span></div>
+    <div class="formgrid"><label>Verkaufte Menge<input id="sQty" inputmode="numeric" value="${t.qty}"></label><label>Verkaufspreis / Stk<input id="sPr" inputmode="numeric" value="${t.target||(r?r.liveSell:'')}"></label></div>
+    <div class="preview" id="sPrev"></div>
+    <button class="btn" id="sSave">Speichern</button>
+    <p class="note">Weniger verkauft als gekauft? Der Rest bleibt als offener Flip stehen.</p>`);
+  const upd=()=>{const q=Math.min(t.qty,parseGp($('sQty').value)),p=parseGp($('sPr').value),tx=tax(t.id,p);
+    $('sPrev').innerHTML=`Steuer: ${full(tx*q)} gp · Gewinn: <b class="${(p-tx-t.buyPrice)>0?'up':'down'}">${gp((p-tx-t.buyPrice)*q)}</b>`};
+  ['sQty','sPr'].forEach(k=>$(k).addEventListener('input',upd));upd();
+  $('sSave').onclick=()=>{const q=Math.min(t.qty,parseGp($('sQty').value)),p=parseGp($('sPr').value);if(!q||!p)return toast('Menge und Preis eingeben.');
+    if(q<t.qty){trades.push(Object.assign({},t,{tid:t.tid+'s'+Date.now().toString(36),qty:q,sellPrice:p,sellTime:Date.now()}));t.qty-=q}
+    else Object.assign(t,{sellPrice:p,sellTime:Date.now()});
+    saveTrades();$('sheet').classList.remove('open');const pr=(p-tax(t.id,p)-t.buyPrice)*q;
+    toast(`${pr>=0?'💰':'📉'} ${esc(info.name)}: ${pr>0?'+':''}${gp(pr)}`);renderAll();renderJournal()};
 }
 
 // ---------- Alarme ----------
@@ -409,7 +534,8 @@ async function openItem(id,step='5m'){
     <p class="note"><span class="up">■</span> Instant-Buy &nbsp;<span class="down">■</span> Instant-Sell &nbsp;Balken = Volumen · Trust ${Math.round(r.rel*100)} %</p>
     <h2>🔔 Alarm</h2>
     <div class="alertrow"><input id="aBelow" placeholder="Kaufpreis ≤ (z. B. ${gp(Math.round(r.liveBuy*.97))})" value="${a.below?a.below:''}"><input id="aAbove" placeholder="Verkaufspreis ≥" value="${a.above?a.above:''}"></div>
-    <div class="alertrow" style="margin-top:8px"><button class="btn" id="aSave">Alarm / Watchlist speichern</button></div>`;
+    <div class="alertrow" style="margin-top:8px"><button class="btn" id="aSave">Alarm / Watchlist speichern</button></div>
+    <div class="alertrow" style="margin-top:8px"><button class="btn sec" data-bought="${r.id}" data-q="${r.qty||1}" data-pr="${r.buy}">✅ Kauf eintragen</button></div>`;
   $('closeS').onclick=()=>$('sheet').classList.remove('open');
   $('sh').querySelectorAll('.tf button').forEach(b=>b.onclick=()=>openItem(id,b.dataset.step));
   $('aSave').onclick=()=>{const below=parseGp($('aBelow').value)||null,above=parseGp($('aAbove').value)||null;
@@ -434,6 +560,12 @@ function chartSVG(d){
 
 // ---------- Events ----------
 document.addEventListener('click',e=>{
+  const bb=e.target.closest('[data-bought]');if(bb){e.stopPropagation();openBuyForm(+bb.dataset.bought,+bb.dataset.q,+bb.dataset.pr);return}
+  const sb=e.target.closest('[data-sold]');if(sb){openSellForm(sb.dataset.sold);return}
+  const td=e.target.closest('[data-tdel]');if(td){const t=trades.find(x=>x.tid===td.dataset.tdel);
+    if(t&&td.dataset.sure!=='1'){td.dataset.sure='1';td.textContent='Sicher?';setTimeout(()=>{if(td.isConnected){td.dataset.sure='';td.textContent=t.sellPrice==null?'✕':'✕ löschen'}},3000);return}
+    trades=trades.filter(x=>x.tid!==td.dataset.tdel);saveTrades();renderAll();renderJournal();return}
+  const ps=e.target.closest('#perSeg button');if(ps){period=+ps.dataset.p;segOn('#perSeg',ps);renderJournal();return}
   const nb=e.target.closest('#nav button');
   if(nb){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b===nb));
     document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+nb.dataset.v));window.scrollTo(0,0);return}
@@ -448,6 +580,12 @@ document.addEventListener('click',e=>{
 function segOn(sel,btn){document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on',b===btn))}
 $('search').addEventListener('input',renderAllList);
 $('refresh').onclick=load;
+$('expBtn').onclick=async()=>{const txt=JSON.stringify({v:1,trades,alerts});try{await navigator.clipboard.writeText(txt);toast('Kopiert ✅ – z. B. in Notizen einfügen.')}catch(e){$('impTxt').style.display='block';$('impTxt').value=txt;$('impTxt').select();toast('Text unten markiert – bitte manuell kopieren.')}};
+$('impBtn').onclick=()=>{const ta=$('impTxt');if(ta.style.display!=='block'||!ta.value.trim()){ta.style.display='block';ta.value='';ta.focus();return}
+  try{const d=JSON.parse(ta.value);if(!Array.isArray(d.trades))throw 0;const have=new Set(trades.map(t=>t.tid));let n=0;
+    for(const t of d.trades)if(!have.has(t.tid)){trades.push(t);n++}if(Array.isArray(d.alerts)&&!alerts.length){alerts=d.alerts;store.set('alerts',alerts)}
+    saveTrades();ta.value='';ta.style.display='none';renderAll();renderJournal();toast(n+' Flips wiederhergestellt ✅')}catch(e){toast('Text nicht erkannt.')}};
+renderJournal();
 $('notifBtn').onclick=async()=>{try{if(!('Notification'in window))return toast('Dieses Gerät unterstützt keine Web-Benachrichtigungen – Hinweise kommen als Einblendung + Vibration.');
   const p=await Notification.requestPermission();toast(p==='granted'?'Benachrichtigungen aktiv ✅':'Nicht erlaubt – Hinweise kommen als Einblendung.')}catch(e){toast('Benachrichtigungen nicht verfügbar.')}};
 const SETTINGS=['slots','budget','mode','minVol','minRoi','maxRoi','maxAge','share','members','notifyTop'];
