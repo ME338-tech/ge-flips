@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14110d">
+<meta name="theme-color" content="#0b0d12">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -98,11 +100,82 @@ svg text{fill:var(--muted);font-size:11px}
 .empty{color:var(--muted);text-align:center;padding:24px 8px}
 .alertrow{display:flex;gap:8px;align-items:center}
 .alertrow > *{flex:1}
+
+/* ===== Modern Theme ===== */
+:root{--bg:#0b0d12;--panel:rgba(255,255,255,.045);--panel2:rgba(255,255,255,.07);--line:rgba(255,255,255,.08);--text:#eef1f6;--muted:#8b93a7;
+--gold:#f5c451;--up:#34d399;--down:#f87171;--accent:#f5b83d;--grad:linear-gradient(135deg,#f7cf5c 0%,#f08a24 100%);--r:16px}
+html,body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-feature-settings:"tnum" 1,"cv11" 1;letter-spacing:-.01em}
+body{background:radial-gradient(900px 500px at 85% -10%,rgba(240,138,36,.16),transparent 60%),radial-gradient(700px 400px at -10% 10%,rgba(99,102,241,.12),transparent 60%),var(--bg);background-attachment:fixed;min-height:100vh}
+header{background:rgba(11,13,18,.72);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid var(--line)}
+header h1{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.02em}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--grad);display:grid;place-items:center;box-shadow:0 4px 16px rgba(240,138,36,.35)}
+.brand{background:linear-gradient(90deg,#fff,#cfd5e2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.live{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-weight:500}
+.dot.ok{background:var(--up)}
+.iconbtn{background:var(--panel2);border:1px solid var(--line);border-radius:12px;width:36px;height:36px;padding:0;display:grid;place-items:center;font-size:16px}
+main{padding:14px 14px calc(110px + var(--sb))}
+h2{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin:22px 2px 10px}
+h2 small{font-weight:500}
+.card,.stat,.form,.budgetbox,.lim{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 8px 24px rgba(0,0,0,.25)}
+.card{padding:14px;gap:6px 12px;transition:transform .12s ease,border-color .2s}
+.card:active{transform:scale(.985);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03))}
+.card img{width:34px;height:34px;padding:4px;border-radius:10px;background:rgba(255,255,255,.06)}
+.card .n{font-weight:600;font-size:15px}
+.card .p{font-size:16px;font-weight:700}
+.stat{padding:14px}
+.stat .k{font-size:11px;font-weight:600;letter-spacing:.06em}
+.stat .v{font-size:24px;font-weight:800;letter-spacing:-.03em;color:var(--text);margin-top:2px}
+.summary .stat:first-child .v{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.budgetbox{position:relative;padding:16px;border:1px solid transparent;background:linear-gradient(180deg,#151821,#11141b) padding-box,var(--grad) border-box}
+.budgetbox label{color:var(--text);font-size:14px}
+.brow input{font-size:26px;font-weight:800;letter-spacing:-.03em;background:rgba(255,255,255,.04);border-radius:12px;padding:10px 12px}
+.quick button{border-radius:999px;font-weight:600;background:var(--panel2);border:1px solid var(--line)}
+.quick button:active{background:var(--grad);color:#1a1204}
+.bar{height:6px;background:rgba(255,255,255,.07);border-radius:99px}#barFill{background:var(--grad);border-radius:99px;box-shadow:0 0 12px rgba(240,138,36,.6)}
+.seg{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{border-radius:10px;font-weight:600;padding:9px 4px;transition:background .2s,color .2s}
+.seg button.on{background:var(--grad);color:#1a1204;box-shadow:0 4px 14px rgba(240,138,36,.3)}
+.pill{border-radius:999px;padding:3px 9px;font-weight:500;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.pill.g{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.25)}
+.pill.r{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.25)}
+.pill.y{background:rgba(245,196,81,.1);border-color:rgba(245,196,81,.28)}
+.order{border-radius:12px;padding:9px 12px}
+.order.buy{background:linear-gradient(90deg,rgba(52,211,153,.16),rgba(52,211,153,.04));border:1px solid rgba(52,211,153,.25)}
+.order.sell{background:linear-gradient(90deg,rgba(248,113,113,.16),rgba(248,113,113,.04));border:1px solid rgba(248,113,113,.25)}
+.order b{font-size:11px;letter-spacing:.08em}
+.order span:last-child{font-size:16px}
+.btn,.acts button.go{background:var(--grad);color:#1a1204;border:0;border-radius:12px;font-weight:700;box-shadow:0 6px 18px rgba(240,138,36,.28)}
+.btn.sec,.acts button{background:var(--panel2);color:var(--text);border:1px solid var(--line);box-shadow:none;border-radius:12px}
+.acts button.go{box-shadow:0 6px 18px rgba(240,138,36,.25)}
+input,select,textarea{border-radius:12px!important;background:rgba(255,255,255,.05)!important;border:1px solid var(--line)!important;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(245,184,61,.6)!important;box-shadow:0 0 0 3px rgba(245,184,61,.15)}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b93a7' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 12px center!important;padding-right:32px!important}
+.form{padding:16px;gap:14px}
+nav{left:12px;right:12px;bottom:calc(10px + var(--sb));padding:6px;border-radius:22px;background:rgba(20,23,31,.78);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);border:1px solid rgba(255,255,255,.09);box-shadow:0 12px 40px rgba(0,0,0,.5);max-width:620px;margin:0 auto}
+nav button{border-radius:16px;padding:7px 0;font-weight:600;font-size:10.5px;gap:3px;transition:color .2s,background .2s}
+nav button span{display:grid;place-items:center;height:24px}
+nav button.on{color:var(--gold);background:rgba(245,196,81,.1)}
+#openBadge{background:var(--grad);margin-left:20px;margin-top:-1px;box-shadow:0 0 0 2px #14171f}
+#sheet{background:rgba(5,6,9,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.sh{background:linear-gradient(180deg,#171a23,#11141b);border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding-top:10px;box-shadow:0 -20px 60px rgba(0,0,0,.5);animation:up .25s ease}
+.sh::before{content:"";display:block;width:40px;height:4px;border-radius:9px;background:rgba(255,255,255,.18);margin:0 auto 12px}
+@keyframes up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}
+.sh .top h3{color:var(--text);font-weight:700;font-size:18px}
+.tf button{border-radius:10px;font-weight:600;background:var(--panel2);border:1px solid var(--line)}
+.tf button.on{background:var(--grad);color:#1a1204;border-color:transparent}
+.preview{background:rgba(255,255,255,.04);border-radius:12px}
+#toast{background:rgba(23,26,35,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(245,184,61,.35);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.45);bottom:calc(92px + var(--sb))}
+.rank::before{background:var(--grad);border-radius:8px;padding:1px 6px;box-shadow:0 2px 8px rgba(240,138,36,.4)}
+.err{border-radius:14px;background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.3)}
+.empty{border:1px dashed var(--line);border-radius:var(--r);background:rgba(255,255,255,.02)}
+.note{line-height:1.5}
+.view.on{animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+::-webkit-scrollbar{width:0;height:0}
 </style>
 </head>
 <body>
 <header>
-  <h1>⚖️ GE Flips</h1>
+  <h1><span class="logo"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#1a1204" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><span class="brand">GE Flips</span></h1>
   <div class="live"><span id="dot" class="dot"></span><span id="liveTxt">…</span></div>
   <button class="iconbtn" id="refresh" aria-label="Aktualisieren">↻</button>
 </header>
@@ -113,7 +186,7 @@ svg text{fill:var(--muted);font-size:11px}
   <!-- TOP -->
   <section class="view on" id="v-top">
     <div class="budgetbox">
-      <label for="budgetTop">💰 Verfügbares Gold – so viel darf der Plan einsetzen</label>
+      <label for="budgetTop">Verfügbares Gold <span class="muted" style="font-weight:500">· so viel darf der Plan einsetzen</span></label>
       <div class="brow"><input id="budgetTop" inputmode="text" placeholder="z. B. 25m"><span id="budgetParsed" class="muted"></span></div>
       <div class="quick"><button data-b="1m">1m</button><button data-b="5m">5m</button><button data-b="10m">10m</button><button data-b="50m">50m</button><button data-b="100m">100m</button><button data-b="500m">500m</button></div>
       <div class="bar"><div id="barFill"></div></div>
@@ -121,9 +194,9 @@ svg text{fill:var(--muted);font-size:11px}
     </div>
     <div class="seg" id="riskSeg"><button data-r="safe">🛡️ Sicher</button><button data-r="mid" class="on">⚖️ Ausgewogen</button><button data-r="risk">🔥 Riskant</button></div>
     <p class="note" id="riskNote" style="margin:-4px 2px 10px"></p>
-    <div id="openTopWrap" style="display:none"><h2>📦 Deine offenen Flips <small id="openTopInfo"></small></h2><div id="openList"></div></div>
+    <div id="openTopWrap" style="display:none"><h2>Deine offenen Flips <small id="openTopInfo"></small></h2><div id="openList"></div></div>
     <div class="summary" id="summary"></div>
-    <h2>🎯 Dein Slot-Plan <small id="topInfo"></small></h2>
+    <h2>Dein Slot-Plan <small id="topInfo"></small></h2>
     <div id="topList"></div>
     <p class="note">Die App bewertet jede Minute alle Items automatisch: erwarteter Gewinn in 4 h (Marge nach 2 % Steuer × machbare Menge aus Budget, Buy-Limit und Volumen), gewichtet nach Verlässlichkeit (Live-Marge passt zum Stunden-Ø, frische Trades, kein Ausreißer-ROI). Der Slot-Plan wählt automatisch die besten Items für deine GE-Slots: Zuerst bekommt jeder Slot den gleichen Anteil am Budget, übriges Geld geht an die Items mit dem besten Verhältnis aus ROI und Verlässlichkeit – nie über Buy-Limit oder realistisches Volumen hinaus. Kaufmenge = Verkaufsmenge. Tipp: Für schnellere Füllung 1 gp über dem Kaufpreis bieten bzw. 1 gp unter dem Verkaufspreis anbieten.</p>
   </section>
@@ -132,13 +205,13 @@ svg text{fill:var(--muted);font-size:11px}
   <section class="view" id="v-flips">
     <div class="seg" id="perSeg"><button data-p="1" class="on">Heute</button><button data-p="7">7 Tage</button><button data-p="30">30 Tage</button><button data-p="0">Gesamt</button></div>
     <div class="summary" id="jStats"></div>
-    <h2>📦 Offene Flips <small id="openInfo"></small></h2>
+    <h2>Offene Flips <small id="openInfo"></small></h2>
     <div id="openList2"></div>
-    <h2>⏳ Buy-Limits (4 h) <small>ab dem ersten Kauf</small></h2>
+    <h2>Buy-Limits (4 h) <small>ab dem ersten Kauf</small></h2>
     <div id="limitList"></div>
-    <h2>✅ Abgeschlossene Flips</h2>
+    <h2>Abgeschlossene Flips</h2>
     <div id="histList"></div>
-    <h2>💾 Sicherung</h2>
+    <h2>Sicherung</h2>
     <p class="note" style="margin-top:0">Deine Flips liegen nur auf diesem Gerät. Mit „Kopieren“ sicherst du sie als Text (z. B. in Notizen), mit „Einfügen“ stellst du sie wieder her.</p>
     <div class="alertrow"><button class="btn sec" id="expBtn">Kopieren</button><button class="btn sec" id="impBtn">Einfügen</button></div>
     <textarea id="impTxt" placeholder="Gesicherten Text hier einfügen und nochmal „Einfügen“ tippen" style="display:none;width:100%;min-height:90px;margin-top:8px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:13px"></textarea>
@@ -180,7 +253,7 @@ svg text{fill:var(--muted);font-size:11px}
 
   <!-- ALERTS -->
   <section class="view" id="v-alert">
-    <h2>🔔 Preisalarme & Watchlist</h2>
+    <h2>Preisalarme & Watchlist</h2>
     <div id="alertList"></div>
     <p class="note">Alarm setzen: Item antippen → „Alarm“. Geprüft wird bei jeder Live-Aktualisierung (jede Minute), solange die App offen ist. Bei Treffer: Hinweis, Vibration und – falls erlaubt – Systembenachrichtigung.</p>
     <button class="btn sec" id="notifBtn">Benachrichtigungen erlauben</button>
@@ -188,7 +261,7 @@ svg text{fill:var(--muted);font-size:11px}
 
   <!-- SETTINGS -->
   <section class="view" id="v-set">
-    <h2>⚙️ Einstellungen</h2>
+    <h2>Einstellungen</h2>
     <div class="form">
       <label>Budget (z. B. 10m, 500k, 1.2b)<input id="budget" value="10m" inputmode="text"></label>
       <label>Margen-Basis
@@ -206,19 +279,19 @@ svg text{fill:var(--muted);font-size:11px}
       <label class="chk"><input id="members" type="checkbox" checked> Members-Items einbeziehen</label>
       <label class="chk"><input id="notifyTop" type="checkbox"> Melden, wenn ein neuer Flip in die Top 3 kommt</label>
     </div>
-    <h2>📲 Als App installieren</h2>
+    <h2>Als App installieren</h2>
     <p class="note"><b>iPhone (Safari):</b> Teilen-Symbol → „Zum Home-Bildschirm“.<br><b>Android (Chrome):</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.<br>
     Daten: OSRS Wiki Real-time Prices (RuneLite-Crowdsourcing), Aktualisierung jede Minute. Steuer: 2 %, abgerundet, max. 5 M/Stück, keine Steuer unter 50 gp, Bonds steuerfrei. Margen sind vergangene Trades – prüf den Preis im Spiel, bevor du große Gebote setzt.</p>
   </section>
 </main>
 
 <nav id="nav">
-  <button data-v="top" class="on"><span>🏆</span>Top</button>
-  <button data-v="flips"><span>📒</span>Flips<i id="openBadge"></i></button>
-  <button data-v="trend"><span>📈</span>Trends</button>
-  <button data-v="all"><span>🔎</span>Alle</button>
-  <button data-v="alert"><span>🔔</span>Alarme</button>
-  <button data-v="set"><span>⚙️</span>Setup</button>
+  <button data-v="top" class="on"><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>Top</button>
+  <button data-v="flips"><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4z"/><path d="M8 9h8M8 13h6"/></svg></span>Flips<i id="openBadge"></i></button>
+  <button data-v="trend"><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>Trends</button>
+  <button data-v="all"><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>Alle</button>
+  <button data-v="alert"><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></span>Alarme</button>
+  <button data-v="set"><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>Setup</button>
 </nav>
 
 <div id="sheet"><div class="sh" id="sh"></div></div>
@@ -228,12 +301,12 @@ svg text{fill:var(--muted);font-size:11px}
 // ---------- App-Icon & Manifest (alles in einer Datei) ----------
 (function(){
   const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
-  g.fillStyle='#14110d';g.fillRect(0,0,512,512);g.fillStyle='#d9a441';g.beginPath();g.arc(256,256,200,0,7);g.fill();
-  g.fillStyle='#14110d';g.font='bold 210px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('GE',256,268);
+  const gr=g.createLinearGradient(0,0,512,512);gr.addColorStop(0,'#f7cf5c');gr.addColorStop(1,'#f08a24');g.fillStyle='#0b0d12';g.fillRect(0,0,512,512);g.fillStyle=gr;g.beginPath();g.roundRect?g.roundRect(56,56,400,400,110):g.rect(56,56,400,400);g.fill();
+  g.fillStyle='#1a1204';g.font='800 190px Inter,system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText('GE',256,268);
   const url=c.toDataURL('image/png');
   document.getElementById('favicon').href=url;document.getElementById('touchicon').href=url;
   const start=location.href.split('#')[0];
-  const man={name:'GE Flips – OSRS',short_name:'GE Flips',start_url:start,scope:start.replace(/[^/]*$/,''),display:'standalone',background_color:'#14110d',theme_color:'#14110d',icons:[{src:url,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+  const man={name:'GE Flips – OSRS',short_name:'GE Flips',start_url:start,scope:start.replace(/[^/]*$/,''),display:'standalone',background_color:'#0b0d12',theme_color:'#0b0d12',icons:[{src:url,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
   document.getElementById('manifest').href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}));
 })();
 
@@ -468,7 +541,7 @@ async function runLong(force){
 }
 function spark(v,cls){const w=110,h=34,lo=Math.min(...v),hi=Math.max(...v),rg=hi-lo||1;
   const pts=v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(h-2-(y-lo)/rg*(h-4)).toFixed(1)}`).join(' ');
-  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${cls==='up'?'#4fc07a':cls==='down'?'#e5655a':'#a89a80'}" stroke-width="1.6"/></svg>`}
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${cls==='up'?'#34d399':cls==='down'?'#f87171':'#8b93a7'}" stroke-width="1.6"/></svg>`}
 function renderLong(){
   const ids=Object.keys(longT.data);
   $('ltStatus').textContent=longT.ts?`${ids.length} Items analysiert · Stand ${new Date(longT.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}`:'Noch nicht analysiert.';
@@ -636,7 +709,7 @@ async function openItem(id,step='5m'){
     <div class="tf">${[['5m','30 h'],['1h','15 T'],['6h','90 T'],['24h','1 J']].map(([s,l])=>`<button data-step="${s}" class="${s===step?'on':''}">${l}</button>`).join('')}</div>
     <div id="chart" class="muted" style="min-height:180px">Lade Preisverlauf…</div>
     <p class="note"><span class="up">■</span> Instant-Buy &nbsp;<span class="down">■</span> Instant-Sell &nbsp;Balken = Volumen · Trust ${Math.round(r.rel*100)} %</p>
-    <h2>🔔 Alarm</h2>
+    <h2>Alarm</h2>
     <div class="alertrow"><input id="aBelow" placeholder="Kaufpreis ≤ (z. B. ${gp(Math.round(r.liveBuy*.97))})" value="${a.below?a.below:''}"><input id="aAbove" placeholder="Verkaufspreis ≥" value="${a.above?a.above:''}"></div>
     <div class="alertrow" style="margin-top:8px"><button class="btn" id="aSave">Alarm / Watchlist speichern</button></div>
     <div class="alertrow" style="margin-top:8px"><button class="btn sec" data-bought="${r.id}" data-q="${r.qty||1}" data-pr="${r.buy}">✅ Kauf eintragen</button></div>`;
@@ -656,10 +729,10 @@ function chartSVG(d){
   const X=t=>P.l+(t-x0)/(x1-x0||1)*(W-P.l-P.r),Y=v=>P.t+(1-(v-lo)/(hi-lo))*(H-P.t-P.b);
   const line=k=>{let s='',pen=false;for(const p of d){if(!p[k]){pen=false;continue}s+=(pen?'L':'M')+X(p.timestamp).toFixed(1)+','+Y(p[k]).toFixed(1);pen=true}return s};
   const bw=Math.max(.6,(W-P.l-P.r)/d.length-.4);
-  const bars=d.map(p=>{const h=((p.highPriceVolume||0)+(p.lowPriceVolume||0))/vmax*VH;return`<rect x="${(X(p.timestamp)-bw/2).toFixed(1)}" y="${(H-P.b+18+VH-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="#6b5a3a"/>`}).join('');
-  let g='';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="#3a3124"/><text x="${P.l-4}" y="${y+4}" text-anchor="end">${gp(v)}</text>`}
+  const bars=d.map(p=>{const h=((p.highPriceVolume||0)+(p.lowPriceVolume||0))/vmax*VH;return`<rect x="${(X(p.timestamp)-bw/2).toFixed(1)}" y="${(H-P.b+18+VH-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(245,184,61,.35)"/>`}).join('');
+  let g='';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.07)"/><text x="${P.l-4}" y="${y+4}" text-anchor="end">${gp(v)}</text>`}
   for(let i=0;i<=2;i++){const t=x0+(x1-x0)*i/2,dt=new Date(t*1000);g+=`<text x="${X(t)}" y="${H-P.b+13}" text-anchor="${['start','middle','end'][i]}">${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} ${dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</text>`}
-  return`<svg viewBox="0 0 ${W} ${H+VH-12}" width="100%">${g}${bars}<path d="${line('avgHighPrice')}" fill="none" stroke="#4fc07a" stroke-width="1.4"/><path d="${line('avgLowPrice')}" fill="none" stroke="#e5655a" stroke-width="1.4"/></svg>`;
+  return`<svg viewBox="0 0 ${W} ${H+VH-12}" width="100%">${g}${bars}<path d="${line('avgHighPrice')}" fill="none" stroke="#34d399" stroke-width="1.4"/><path d="${line('avgLowPrice')}" fill="none" stroke="#f87171" stroke-width="1.4"/></svg>`;
 }
 
 // ---------- Events ----------
