@@ -119,6 +119,8 @@ svg text{fill:var(--muted);font-size:11px}
       <div class="bar"><div id="barFill"></div></div>
       <div class="bused" id="budgetUse"></div>
     </div>
+    <div class="seg" id="riskSeg"><button data-r="safe">🛡️ Sicher</button><button data-r="mid" class="on">⚖️ Ausgewogen</button><button data-r="risk">🔥 Riskant</button></div>
+    <p class="note" id="riskNote" style="margin:-4px 2px 10px"></p>
     <div id="openTopWrap" style="display:none"><h2>📦 Deine offenen Flips <small id="openTopInfo"></small></h2><div id="openList"></div></div>
     <div class="summary" id="summary"></div>
     <h2>🎯 Dein Slot-Plan <small id="topInfo"></small></h2>
@@ -144,6 +146,8 @@ svg text{fill:var(--muted);font-size:11px}
 
   <!-- TRENDS -->
   <section class="view" id="v-trend">
+    <div class="seg" id="trendTop"><button data-tt="short" class="on">⚡ Kurzfristig</button><button data-tt="long">📊 Langzeit (teure Items)</button></div>
+    <div id="shortWrap">
     <div class="seg" id="trendSeg">
       <button data-t="up" class="on">🚀 Steigend</button><button data-t="down">📉 Fallend</button><button data-t="vol">🔥 Volumen-Spike</button>
     </div>
@@ -151,6 +155,18 @@ svg text{fill:var(--muted);font-size:11px}
       <button data-w="trend1h" class="on">5 Min vs. 1 h</button><button data-w="trend24h">Jetzt vs. 24 h</button>
     </div>
     <div id="trendList"></div>
+    </div>
+    <div id="longWrap" style="display:none">
+      <div class="form" style="gap:8px;margin-bottom:10px">
+        <div class="alertrow"><label style="display:grid;gap:4px;font-size:12px;color:var(--muted)">Mindestpreis<input id="ltMin" value="1m"></label>
+        <label style="display:grid;gap:4px;font-size:12px;color:var(--muted)">Anzahl Items<select id="ltN"><option>30</option><option selected>50</option><option>80</option></select></label></div>
+        <button class="btn" id="ltRun">🔍 Langzeit-Trends analysieren</button>
+        <div class="muted" id="ltStatus" style="font-size:12px"></div>
+      </div>
+      <div class="seg" id="ltSeg"><button data-l="up" class="on">📈 Steigt lange</button><button data-l="down">📉 Fällt lange</button><button data-l="rev">🔄 Trendwende</button></div>
+      <div id="ltList"></div>
+      <p class="note">Analysiert die meistgehandelten Items ab dem Mindestpreis über bis zu 30 Tage (6-Stunden-Daten der OSRS Wiki). Trend = Steigung der letzten 14 Tage, „Klarheit“ = wie gleichmäßig der Trend verläuft. <b>Trendwende</b>: nach starkem Fall (30 T ≤ −8 %) wieder 2+ Tage steigend, bzw. nach starkem Anstieg wieder fallend. Die 7-Tage-Prognose setzt den bisherigen Trend nur fort – keine Garantie. Wird alle 30 Min. automatisch aufgefrischt, solange die App offen ist.</p>
+    </div>
   </section>
 
   <!-- ALL / SEARCH -->
@@ -315,7 +331,8 @@ function renderAll(){
   const c=cfg();limitUse=calcLimits();
   const all=rows.filter(r=>c.members||!r.members).map(r=>compute(r,c));
   scored=all;
-  const flips=all.filter(r=>r.margin>0&&r.vol>=c.minVol&&r.age<=c.maxAge&&r.roi>=c.minRoi&&r.roi<=c.maxRoi&&r.qty>0).sort((a,b)=>b.score-a.score);
+  const flips=riskFilter(all,c).sort((a,b)=>b.score-a.score);
+  $('riskNote').textContent=RISK_NOTE[riskMode];
 
   const plan=makePlan(flips,c);
   const tp=plan.reduce((s,p)=>s+p.pprof,0),tc=plan.reduce((s,p)=>s+p.pcap,0);
@@ -335,19 +352,41 @@ function renderAll(){
 }
 
 // Bis zu N verschiedene Items: erst gleichmäßig Budget pro Slot, dann Rest an die stärksten verteilen
+// ---------- Risiko-Profile ----------
+let riskMode=store.get('risk','mid');
+const RISK_NOTE={
+  safe:'Nur sehr liquide Items (≥ 100 Trades/h), stabile Marge, ROI bis 6 %, kein fallender Kurz- oder Langzeittrend. Weniger Gewinn, dafür füllen die Gebote schnell und sicher.',
+  mid:'Guter Mix aus Gewinn und Verlässlichkeit – deine Filter aus dem Setup gelten.',
+  risk:'Höhere Margen, auch dünn gehandelte Items und Ausreißer bis zur doppelten Max-ROI. Mehr Gewinnchance, aber Gebote füllen langsamer und Preise können kippen – Preis im Spiel immer prüfen!'};
+function riskOf(r){const lt=longT.data[r.id];
+  if(r.rel>=.75&&r.vol>=100&&r.roi<=.06&&!(lt&&lt.sig==='down'))return'safe';
+  if(r.rel<.45||r.roi>.12||r.vol<30)return'risk';return'mid'}
+function riskPill(r){const k=riskOf(r);return k==='safe'?'<span class="pill g">🛡️ geringes Risiko</span>':k==='risk'?'<span class="pill r">🔥 hohes Risiko</span>':'<span class="pill y">⚖️ mittleres Risiko</span>'}
+function ltPill(id){const lt=longT.data[id];if(!lt)return'';
+  const t=lt.sig==='up'?'📈 steigt':lt.sig==='down'?'📉 fällt':lt.sig==='rebound'?'↗️ erholt sich':lt.sig==='turn'?'↘️ dreht':'➖ seitwärts';
+  return`<span class="pill ${lt.sig==='up'||lt.sig==='rebound'?'g':lt.sig==='down'||lt.sig==='turn'?'r':''}">${t} · 7T ${pct(lt.ch7)}</span>`}
+function riskFilter(all,c){
+  const base=all.filter(r=>r.margin>0&&r.qty>0&&r.buy>0&&r.age<=c.maxAge);
+  if(riskMode==='safe')return base.filter(r=>{const lt=longT.data[r.id];
+      return r.rel>=.7&&r.vol>=Math.max(c.minVol,100)&&r.roi>=Math.max(c.minRoi,.003)&&r.roi<=.06&&r.age<=900&&(r.trend1h==null||r.trend1h>-.01)&&!(lt&&(lt.sig==='down'||lt.sig==='turn'))})
+    .map(r=>Object.assign(r,{w:r.rel*r.rel,score:r.profit4h*r.rel*r.rel}));
+  if(riskMode==='risk')return base.filter(r=>r.vol>=5&&r.roi>=Math.max(c.minRoi,.02)&&r.roi<=c.maxRoi*2)
+    .map(r=>Object.assign(r,{w:Math.max(.4,r.rel),score:r.profit4h*Math.max(.4,r.rel)}));
+  return base.filter(r=>r.vol>=c.minVol&&r.roi>=c.minRoi&&r.roi<=c.maxRoi).map(r=>Object.assign(r,{w:r.rel}));
+}
 function makePlan(flips,c){
   const S=c.slots,B=c.budget,share=B/S;
-  const pick=flips.map(r=>{const q=Math.min(r.cap,Math.floor(share/r.buy));return{r,q,val:q*r.margin*r.rel}})
+  const pick=flips.map(r=>{const q=Math.min(r.cap,Math.floor(share/r.buy));return{r,q,val:q*r.margin*(r.w??r.rel)}})
     .filter(x=>x.q>0&&x.val>0).sort((a,b)=>b.val-a.val).slice(0,S).map(x=>Object.assign({},x.r,{pq:x.q}));
   let left=B-pick.reduce((s,p)=>s+p.pq*p.buy,0);
-  for(const p of pick.slice().sort((a,b)=>b.roi*b.rel-a.roi*a.rel)){
+  for(const p of pick.slice().sort((a,b)=>b.roi*(b.w??b.rel)-a.roi*(a.w??a.rel))){
     const add=Math.min(p.cap-p.pq,Math.floor(left/p.buy));if(add>0){p.pq+=add;left-=add*p.buy}}
   pick.forEach(p=>{p.pcap=p.pq*p.buy;p.pprof=p.pq*p.margin});
   return pick.sort((a,b)=>b.pprof-a.pprof);
 }
 function slotCard(p,n){
   const tr=p.trend1h!=null?`<span class="pill ${p.trend1h>0?'g':p.trend1h<0?'r':''}">${p.trend1h>0?'▲':p.trend1h<0?'▼':'•'} ${pct(p.trend1h)}</span>`:'';
-  const relTxt=p.rel>.8?'<span class="pill g">verlässlich</span>':p.rel<.45?'<span class="pill r">riskant</span>':'';
+  const relTxt=riskPill(p)+ltPill(p.id);
   const fresh=!prevTop.has(p.id)&&n<=3&&prevTop.size?'<span class="pill y">NEU</span>':'';
   return `<div class="card slot" data-id="${p.id}">
     <img loading="lazy" src="${ICON(p.icon)}" alt="" onerror="this.style.visibility='hidden'">
@@ -360,7 +399,7 @@ function slotCard(p,n){
 }
 function card(r,o={}){
   const fresh=!prevTop.has(r.id)&&o.rank&&o.rank<=3&&prevTop.size?'<span class="pill y">NEU</span>':'';
-  const relTxt=r.rel>.8?'<span class="pill g">verlässlich</span>':r.rel<.45?'<span class="pill r">riskant</span>':'';
+  const relTxt=riskPill(r)+ltPill(r.id);
   const tr=r.trend1h!=null?`<span class="pill ${r.trend1h>0?'g':r.trend1h<0?'r':''}">${r.trend1h>0?'▲':r.trend1h<0?'▼':'•'} ${pct(r.trend1h)}</span>`:'';
   const q=o.qty??r.qty,pr=o.prof??r.profit4h;
   return `<div class="card ${o.rank?'rank':''}" ${o.rank?`data-rank="${o.rank}"`:''} data-id="${r.id}">
@@ -390,6 +429,71 @@ function renderAllList(){
   list.sort((a,b)=>(b[allSort]??-Infinity)-(a[allSort]??-Infinity));
   $('allList').innerHTML=list.slice(0,100).map(r=>card(r)).join('')||'<div class="empty">Nichts gefunden.</div>';
 }
+
+// ---------- Langzeit-Trends ----------
+let longT=store.get('longT',{ts:0,data:{}}),ltMode='up',ltRunning=false;
+function regress(y){const n=y.length,xs=[...y.keys()],mx=(n-1)/2,my=y.reduce((a,b)=>a+b,0)/n;
+  let sxy=0,sxx=0,syy=0;for(let i=0;i<n;i++){sxy+=(i-mx)*(y[i]-my);sxx+=(i-mx)**2;syy+=(y[i]-my)**2}
+  const b=sxx?sxy/sxx:0;return{b,r2:syy?(sxy*sxy)/(sxx*syy):0}}
+function analyzeSeries(d){
+  const byDay=new Map();
+  for(const p of d){const m=p.avgHighPrice&&p.avgLowPrice?(p.avgHighPrice+p.avgLowPrice)/2:(p.avgHighPrice||p.avgLowPrice);if(!m)continue;
+    const k=Math.floor(p.timestamp/86400);const e=byDay.get(k)||[0,0];e[0]+=m;e[1]++;byDay.set(k,e)}
+  const days=[...byDay.entries()].sort((a,b)=>a[0]-b[0]).slice(-30).map(([,e])=>e[0]/e[1]);
+  if(days.length<8)return null;
+  const last=days[days.length-1],at=k=>days[Math.max(0,days.length-1-k)];
+  const ch7=last/at(7)-1,ch30=last/days[0]-1,ch1=last/at(1)-1;
+  const seg=days.slice(-14),{b,r2}=regress(seg.map(Math.log)),perDay=Math.exp(b)-1;
+  let up=0,dn=0;for(let i=days.length-1;i>0&&days[i]>days[i-1];i--)up++;for(let i=days.length-1;i>0&&days[i]<days[i-1];i--)dn++;
+  let sig='flat';
+  if(ch30<=-.08&&up>=2)sig='rebound';else if(ch30>=.08&&dn>=2)sig='turn';
+  else if(perDay>.003&&r2>=.45)sig='up';else if(perDay<-.003&&r2>=.45)sig='down';
+  return{days:days.map(v=>Math.round(v)),last,ch1,ch7,ch30,perDay,r2,up,dn,sig};
+}
+async function runLong(force){
+  if(ltRunning||!rows.length)return;
+  if(!force&&Date.now()-longT.ts<30*60000){renderLong();return}
+  ltRunning=true;$('ltRun').disabled=true;
+  const minP=parseGp($('ltMin').value)||1e6,N=+$('ltN').value||50,c=cfg();
+  const cand=rows.filter(r=>(c.members||!r.members)&&(r.liveBuy+r.liveSell)/2>=minP)
+    .map(r=>({r,val:(r.liveBuy+r.liveSell)/2*(r.vol24??r.vol*24)})).filter(x=>x.val>0)
+    .sort((a,b)=>b.val-a.val).slice(0,N).map(x=>x.r);
+  const out={};let done=0;
+  const work=async()=>{while(cand.length){const r=cand.shift();
+    try{const ts=await getJSON(`/timeseries?timestep=6h&id=${r.id}`);const a=analyzeSeries(ts.data||[]);if(a)out[r.id]=a}catch(e){}
+    done++;$('ltStatus').textContent=`Analysiere … ${done} / ${N}`;await new Promise(z=>setTimeout(z,150))}};
+  await Promise.all([work(),work(),work()]);
+  longT={ts:Date.now(),data:out};store.set('longT',longT);
+  ltRunning=false;$('ltRun').disabled=false;renderAll();renderLong();
+}
+function spark(v,cls){const w=110,h=34,lo=Math.min(...v),hi=Math.max(...v),rg=hi-lo||1;
+  const pts=v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(h-2-(y-lo)/rg*(h-4)).toFixed(1)}`).join(' ');
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${cls==='up'?'#4fc07a':cls==='down'?'#e5655a':'#a89a80'}" stroke-width="1.6"/></svg>`}
+function renderLong(){
+  const ids=Object.keys(longT.data);
+  $('ltStatus').textContent=longT.ts?`${ids.length} Items analysiert · Stand ${new Date(longT.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}`:'Noch nicht analysiert.';
+  let list=ids.map(id=>({id:+id,...longT.data[id]}));
+  if(ltMode==='up')list=list.filter(x=>x.sig==='up').sort((a,b)=>b.perDay*b.r2-a.perDay*a.r2);
+  else if(ltMode==='down')list=list.filter(x=>x.sig==='down').sort((a,b)=>a.perDay*a.r2-b.perDay*b.r2);
+  else list=list.filter(x=>x.sig==='rebound'||x.sig==='turn').sort((a,b)=>Math.abs(b.ch30)-Math.abs(a.ch30));
+  $('ltList').innerHTML=list.map(x=>{const info=itemInfo(x.id),r=live(x.id),cur=r?(r.liveBuy+r.liveSell)/2:x.last;
+    const cls=x.sig==='up'||x.sig==='rebound'?'up':'down';
+    const clar=x.r2>=.75?'hoch':x.r2>=.55?'mittel':'niedrig';
+    const streak=x.up>=2?`steigt seit ${x.up} Tagen`:x.dn>=2?`fällt seit ${x.dn} Tagen`:'';
+    const proj=cur*Math.pow(1+x.perDay,7),pp=proj-tax(x.id,proj)-cur;
+    const hint=x.sig==='up'?'Stabiler Aufwärtstrend – Kaufen & ein paar Tage halten kann mehr bringen als Flippen.'
+      :x.sig==='down'?'Stetiger Abwärtstrend – nicht lange halten. Wenn flippen, dann nur schnell; für einen Einstieg auf Trendwende warten.'
+      :x.sig==='rebound'?'Nach starkem Fall erholt es sich wieder – möglicher Boden. Beobachten, kleiner Einstieg möglich.'
+      :'Nach starkem Anstieg dreht es nach unten – Gewinne mitnehmen, nicht neu einsteigen.';
+    return`<div class="card" data-id="${x.id}" style="grid-template-columns:34px 1fr auto">
+      <img loading="lazy" src="${ICON(info.icon)}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="n">${esc(info.name)}</div><div class="p ${cls}">${pct(x.perDay,2)}/Tag</div>
+      <div class="d">${gp(cur)} · ${streak||'Klarheit '+clar}</div><div class="r">${spark(x.days,cls)}</div>
+      <div class="row3"><span class="pill ${x.ch7>0?'g':'r'}">7 T ${pct(x.ch7)}</span><span class="pill ${x.ch30>0?'g':'r'}">30 T ${pct(x.ch30)}</span><span class="pill">Klarheit ${clar}</span>${x.sig==='up'?`<span class="pill y">7-T-Prognose ${pp>0?'+':''}${gp(pp)}/Stk n. Steuer</span>`:''}</div>
+      <div class="d" style="grid-column:1/-1;white-space:normal;margin-top:4px">💡 ${hint}</div></div>`}).join('')
+    ||`<div class="empty">${longT.ts?'Aktuell keine Items in dieser Kategorie – Mindestpreis senken oder mehr Items analysieren.':'Tippe auf „Langzeit-Trends analysieren“.'}</div>`;
+}
+setInterval(()=>{if(!document.hidden&&longT.ts&&Date.now()-longT.ts>30*60000)runLong(true)},60000);
 
 // ---------- Flip-Verfolgung ----------
 let trades=store.get('trades',[]),limitUse=new Map(),period=1;
@@ -565,6 +669,9 @@ document.addEventListener('click',e=>{
   const td=e.target.closest('[data-tdel]');if(td){const t=trades.find(x=>x.tid===td.dataset.tdel);
     if(t&&td.dataset.sure!=='1'){td.dataset.sure='1';td.textContent='Sicher?';setTimeout(()=>{if(td.isConnected){td.dataset.sure='';td.textContent=t.sellPrice==null?'✕':'✕ löschen'}},3000);return}
     trades=trades.filter(x=>x.tid!==td.dataset.tdel);saveTrades();renderAll();renderJournal();return}
+  const rk=e.target.closest('#riskSeg button');if(rk){riskMode=rk.dataset.r;store.set('risk',riskMode);segOn('#riskSeg',rk);renderAll();return}
+  const tt=e.target.closest('#trendTop button');if(tt){segOn('#trendTop',tt);const lg=tt.dataset.tt==='long';$('shortWrap').style.display=lg?'none':'block';$('longWrap').style.display=lg?'block':'none';if(lg)runLong(false);return}
+  const ls=e.target.closest('#ltSeg button');if(ls){ltMode=ls.dataset.l;segOn('#ltSeg',ls);renderLong();return}
   const ps=e.target.closest('#perSeg button');if(ps){period=+ps.dataset.p;segOn('#perSeg',ps);renderJournal();return}
   const nb=e.target.closest('#nav button');
   if(nb){document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b===nb));
@@ -580,6 +687,8 @@ document.addEventListener('click',e=>{
 function segOn(sel,btn){document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on',b===btn))}
 $('search').addEventListener('input',renderAllList);
 $('refresh').onclick=load;
+$('ltRun').onclick=()=>runLong(true);
+document.querySelectorAll('#riskSeg button').forEach(b=>b.classList.toggle('on',b.dataset.r===riskMode));
 $('expBtn').onclick=async()=>{const txt=JSON.stringify({v:1,trades,alerts});try{await navigator.clipboard.writeText(txt);toast('Kopiert ✅ – z. B. in Notizen einfügen.')}catch(e){$('impTxt').style.display='block';$('impTxt').value=txt;$('impTxt').select();toast('Text unten markiert – bitte manuell kopieren.')}};
 $('impBtn').onclick=()=>{const ta=$('impTxt');if(ta.style.display!=='block'||!ta.value.trim()){ta.style.display='block';ta.value='';ta.focus();return}
   try{const d=JSON.parse(ta.value);if(!Array.isArray(d.trades))throw 0;const have=new Set(trades.map(t=>t.tid));let n=0;
@@ -588,7 +697,7 @@ $('impBtn').onclick=()=>{const ta=$('impTxt');if(ta.style.display!=='block'||!ta
 renderJournal();
 $('notifBtn').onclick=async()=>{try{if(!('Notification'in window))return toast('Dieses Gerät unterstützt keine Web-Benachrichtigungen – Hinweise kommen als Einblendung + Vibration.');
   const p=await Notification.requestPermission();toast(p==='granted'?'Benachrichtigungen aktiv ✅':'Nicht erlaubt – Hinweise kommen als Einblendung.')}catch(e){toast('Benachrichtigungen nicht verfügbar.')}};
-const SETTINGS=['slots','budget','mode','minVol','minRoi','maxRoi','maxAge','share','members','notifyTop'];
+const SETTINGS=['ltMin','ltN','slots','budget','mode','minVol','minRoi','maxRoi','maxAge','share','members','notifyTop'];
 const saved=store.get('settings',{});
 SETTINGS.forEach(k=>{const el=$(k);if(k in saved){if(el.type==='checkbox')el.checked=saved[k];else el.value=saved[k]}
   el.addEventListener('input',()=>{const s={};SETTINGS.forEach(j=>{const x=$(j);s[j]=x.type==='checkbox'?x.checked:x.value});store.set('settings',s);renderAll()})});
