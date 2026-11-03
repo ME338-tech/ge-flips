@@ -171,6 +171,23 @@ nav button.on{color:var(--gold);background:rgba(245,196,81,.1)}
 .note{line-height:1.5}
 .view.on{animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 ::-webkit-scrollbar{width:0;height:0}
+.ldot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#f87171;margin-right:5px;vertical-align:1px;animation:blink 1.4s infinite}
+.tf button.on .ldot{background:#1a1204}
+@keyframes blink{50%{opacity:.25}}
+.ticker{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}
+.tk{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.tk .k{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.tk .v{font-size:24px;font-weight:800;letter-spacing:-.03em;border-radius:8px;margin:2px -4px;padding:0 4px}
+.tk .s{font-size:11.5px;color:var(--muted)}
+.fup{animation:fup 1.2s ease}.fdn{animation:fdn 1.2s ease}
+@keyframes fup{0%{background:rgba(52,211,153,.35)}100%{background:transparent}}
+@keyframes fdn{0%{background:rgba(248,113,113,.35)}100%{background:transparent}}
+.lvm{font-size:13px;color:var(--muted);margin:4px 2px 8px}.lvm b{color:var(--text)}
+.lvfoot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px}
+.lvlog{display:grid;gap:4px}.lvrow{display:grid;grid-template-columns:72px 1fr auto;gap:8px;font-size:13px;padding:7px 10px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+circle.pulse{animation:blink 1.4s infinite}
+.chg{font-weight:700;font-size:15px;margin:4px 2px 2px}.chg .muted{font-weight:500;font-size:12px}
+.tip{font-size:12px;color:var(--muted);text-align:center;min-height:18px;margin-top:2px}.tip b{color:var(--text);font-weight:600}
 </style>
 </head>
 <body>
@@ -276,6 +293,7 @@ nav button.on{color:var(--gold);background:rgba(245,196,81,.1)}
       <label>Letzter Trade max. … Minuten alt<input id="maxAge" type="number" value="30" inputmode="numeric"></label>
       <label>Anteil am Markt, den du realistisch füllst (%)<input id="share" type="number" value="10" inputmode="numeric"></label>
       <label>Anzahl GE-Slots für den Plan<select id="slots"><option value="8">8 (Members)</option><option value="3">3 (F2P)</option><option value="6">6</option><option value="4">4</option></select></label>
+      <label>Marktdaten aktualisieren<select id="refresh_s"><option value="30">alle 30 Sekunden</option><option value="60" selected>jede Minute</option><option value="120">alle 2 Minuten</option></select></label>
       <label class="chk"><input id="members" type="checkbox" checked> Members-Items einbeziehen</label>
       <label class="chk"><input id="notifyTop" type="checkbox"> Melden, wenn ein neuer Flip in die Top 3 kommt</label>
     </div>
@@ -539,9 +557,11 @@ async function runLong(force){
   longT={ts:Date.now(),data:out};store.set('longT',longT);
   ltRunning=false;$('ltRun').disabled=false;renderAll();renderLong();
 }
-function spark(v,cls){const w=110,h=34,lo=Math.min(...v),hi=Math.max(...v),rg=hi-lo||1;
-  const pts=v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(h-2-(y-lo)/rg*(h-4)).toFixed(1)}`).join(' ');
-  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${cls==='up'?'#34d399':cls==='down'?'#f87171':'#8b93a7'}" stroke-width="1.6"/></svg>`}
+function spark(v,cls){const w=110,h=36,sv=movAvg(v,2),lo=Math.min(...sv),hi=Math.max(...sv),rg=hi-lo||1,id='s'+(++chartSeq);
+  const col=cls==='up'?'#34d399':cls==='down'?'#f87171':'#8b93a7';
+  const pts=sv.map((y,i)=>[i/(sv.length-1)*(w-4)+2,h-4-(y-lo)/rg*(h-8)]);
+  const line=monoPath(pts),area=line+`L${pts[pts.length-1][0].toFixed(1)},${h}L${pts[0][0].toFixed(1)},${h}Z`,e=pts[pts.length-1];
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".3"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#${id})"/><path d="${line}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round"/><circle cx="${e[0].toFixed(1)}" cy="${e[1].toFixed(1)}" r="2.6" fill="${col}"/></svg>`}
 function renderLong(){
   const ids=Object.keys(longT.data);
   $('ltStatus').textContent=longT.ts?`${ids.length} Items analysiert · Stand ${new Date(longT.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}`:'Noch nicht analysiert.';
@@ -693,8 +713,8 @@ function notify(title,body){
 let tt;function toast(h){const t=$('toast');t.innerHTML=h;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',6000)}
 
 // ---------- Detail-Sheet ----------
-async function openItem(id,step='5m'){
-  const r=scored.find(x=>x.id===id);if(!r)return;
+async function openItem(id,step='live'){
+  const r=scored.find(x=>x.id===id);if(!r)return;stopLive();
   const a=alerts.find(x=>x.id===id)||{};
   $('sheet').classList.add('open');
   $('sh').innerHTML=`<div class="top"><img src="${ICON(r.icon)}" style="width:30px;height:30px" alt="" onerror="this.remove()"><h3>${esc(r.name)}</h3><button class="iconbtn" id="closeS">✕</button></div>
@@ -706,33 +726,148 @@ async function openItem(id,step='5m'){
       <div class="stat"><div class="k">Volumen 1 h</div><div class="v">${full(r.vol)}</div><div class="s">Kauf ${full(r.volHigh)} / Verk. ${full(r.volLow)}</div></div>
       <div class="stat"><div class="k">Trend</div><div class="v ${r.trend1h>0?'up':r.trend1h<0?'down':''}">${pct(r.trend1h)}</div><div class="s">24 h: ${pct(r.trend24h)} · Limit ${r.limit?full(r.limit):'?'}</div></div>
     </div>
-    <div class="tf">${[['5m','30 h'],['1h','15 T'],['6h','90 T'],['24h','1 J']].map(([s,l])=>`<button data-step="${s}" class="${s===step?'on':''}">${l}</button>`).join('')}</div>
+    <div class="tf">${[['live','<span class="ldot"></span>LIVE'],['5m','30 h'],['1h','15 T'],['6h','90 T'],['24h','1 J']].map(([s,l])=>`<button data-step="${s}" class="${s===step?'on':''}">${l}</button>`).join('')}</div>
     <div id="chart" class="muted" style="min-height:180px">Lade Preisverlauf…</div>
-    <p class="note"><span class="up">■</span> Instant-Buy &nbsp;<span class="down">■</span> Instant-Sell &nbsp;Balken = Volumen · Trust ${Math.round(r.rel*100)} %</p>
+    <p class="note"><span class="up">●</span> Verkaufspreis (Instant-Buy) &nbsp;<span class="down">●</span> Kaufpreis (Instant-Sell) &nbsp;Balken = Volumen · geglättet · Trust ${Math.round(r.rel*100)} %</p>
     <h2>Alarm</h2>
     <div class="alertrow"><input id="aBelow" placeholder="Kaufpreis ≤ (z. B. ${gp(Math.round(r.liveBuy*.97))})" value="${a.below?a.below:''}"><input id="aAbove" placeholder="Verkaufspreis ≥" value="${a.above?a.above:''}"></div>
     <div class="alertrow" style="margin-top:8px"><button class="btn" id="aSave">Alarm / Watchlist speichern</button></div>
     <div class="alertrow" style="margin-top:8px"><button class="btn sec" data-bought="${r.id}" data-q="${r.qty||1}" data-pr="${r.buy}">✅ Kauf eintragen</button></div>`;
-  $('closeS').onclick=()=>$('sheet').classList.remove('open');
+  $('closeS').onclick=()=>{$('sheet').classList.remove('open');stopLive()};
   $('sh').querySelectorAll('.tf button').forEach(b=>b.onclick=()=>openItem(id,b.dataset.step));
   $('aSave').onclick=()=>{const below=parseGp($('aBelow').value)||null,above=parseGp($('aAbove').value)||null;
     alerts=alerts.filter(x=>x.id!==id);alerts.push({id,below,above,fired:false});store.set('alerts',alerts);renderAlerts();
     toast('Gespeichert: '+esc(r.name));$('sheet').classList.remove('open');checkAlerts()};
-  try{const ts=await getJSON(`/timeseries?timestep=${step}&id=${id}`);$('chart').innerHTML=chartSVG(ts.data||[])}catch(e){$('chart').textContent='Verlauf nicht verfügbar.'}
+  if(step==='live'){startLive(id);return}
+  try{const ts=await getJSON(`/timeseries?timestep=${step}&id=${id}`);$('chart').innerHTML=chartSVG(ts.data||[]);bindChart()}catch(e){$('chart').textContent='Verlauf nicht verfügbar.'}
 }
+// ---------- Live-Verfolgung (einzelnes Item) ----------
+let LV=null;
+function stopLive(){if(LV){clearInterval(LV.poll);clearInterval(LV.sec);LV=null}}
+async function startLive(id){
+  stopLive();const r=rows.find(x=>x.id===id);if(!r)return;
+  const lv=LV={id,hi:[],lo:[],ctx:[],log:[],next:Date.now()+10000,lastH:0,lastL:0,prevH:null,prevL:null,flashH:'',flashL:'',win:1800,start:Date.now()/1000};
+  $('chart').innerHTML=`<div id="liveBox">
+    <div class="ticker"><div class="tk"><div class="k">Sofort-Kauf · dein Verkaufspreis</div><div class="v up" id="lvH">–</div><div class="s" id="lvHa"></div></div>
+    <div class="tk"><div class="k">Sofort-Verkauf · dein Kaufpreis</div><div class="v down" id="lvL">–</div><div class="s" id="lvLa"></div></div></div>
+    <div class="lvm" id="lvM"></div>
+    <div class="seg" id="lvWin" style="margin:4px 0 6px"><button data-w="600">10 Min</button><button data-w="1800" class="on">30 Min</button><button data-w="10800">3 h</button></div><div id="lvChart" style="min-height:150px"></div>
+    <div class="lvfoot"><span><span class="ldot"></span>Live · Trades werden alle 10 s abgefragt</span><span id="lvN"></span></div>
+    <h2 style="margin-top:12px">Letzte Trades</h2><div id="lvLog" class="lvlog"></div></div>`;
+  $('lvWin').querySelectorAll('button').forEach(b=>b.onclick=()=>{lv.win=+b.dataset.w;segOn('#lvWin',b);drawLive(lv)});
+  try{const ts=await getJSON(`/timeseries?timestep=5m&id=${id}`);lv.ctx=(ts.data||[]).slice(-36)}catch(e){}
+  const tick=async()=>{
+    if(LV!==lv)return;
+    if(!$('liveBox')||!$('sheet').classList.contains('open')){stopLive();return}
+    if(document.hidden)return;
+    try{const d=(await getJSON(`/latest?id=${id}`)).data[id];
+      if(d){if(d.high&&d.highTime&&d.highTime!==lv.lastH){if(lv.lastH)lv.log.unshift({t:d.highTime,k:'h',v:d.high,dir:Math.sign(d.high-(lv.prevH??d.high))});lv.flashH=lv.prevH==null?'':d.high>lv.prevH?'fup':d.high<lv.prevH?'fdn':'';lv.prevH=d.high;lv.lastH=d.highTime;lv.hi.push({t:d.highTime,v:d.high})}
+        if(d.low&&d.lowTime&&d.lowTime!==lv.lastL){if(lv.lastL)lv.log.unshift({t:d.lowTime,k:'l',v:d.low,dir:Math.sign(d.low-(lv.prevL??d.low))});lv.flashL=lv.prevL==null?'':d.low>lv.prevL?'fup':d.low<lv.prevL?'fdn':'';lv.prevL=d.low;lv.lastL=d.lowTime;lv.lo.push({t:d.lowTime,v:d.low})}
+        Object.assign(r,{liveSell:d.high||r.liveSell,liveBuy:d.low||r.liveBuy});
+        lv.log=lv.log.slice(0,12);
+      }}catch(e){}
+    lv.next=Date.now()+10000;drawLive(lv);
+  };
+  lv.poll=setInterval(tick,10000);lv.sec=setInterval(()=>secLive(lv),1000);await tick();
+}
+function secLive(lv){if(LV!==lv||!$('lvHa'))return;const now=Date.now()/1000;
+  $('lvHa').textContent=lv.lastH?'letzter Trade vor '+ago(Math.round(now-lv.lastH)):'';
+  $('lvLa').textContent=lv.lastL?'letzter Trade vor '+ago(Math.round(now-lv.lastL)):'';
+  $('lvN').textContent='nächste Abfrage in '+Math.max(0,Math.ceil((lv.next-Date.now())/1000))+' s'}
+function drawLive(lv){
+  if(!$('lvH'))return;const h=lv.prevH,l=lv.prevL,id=lv.id;
+  const fl=(el,c)=>{el.classList.remove('fup','fdn');if(c){void el.offsetWidth;el.classList.add(c)}};
+  $('lvH').textContent=h?full(h):'–';fl($('lvH'),lv.flashH);$('lvL').textContent=l?full(l):'–';fl($('lvL'),lv.flashL);lv.flashH=lv.flashL='';
+  if(h&&l){const m=h-tax(id,h)-l;$('lvM').innerHTML=`Marge jetzt <b class="${m>0?'up':'down'}">${m>0?'+':''}${full(m)} gp</b> · ROI <b>${pct(m/l,2)}</b> · Spanne ${full(h-l)} · Steuer ${full(tax(id,h))}`}
+  secLive(lv);
+  // Chart: 3 h Kontext (5-Min-Ø, blass) + Live-Trades als Treppe
+  const now=Date.now()/1000,t0=now-Math.min(lv.win,Math.max(180,now-lv.start+90)),W=360,H=160,P={l:46,r:8,t:10,b:24};
+  const ref=lv.prevH||lv.prevL,ok=v=>v&&(!ref||Math.abs(v/ref-1)<.5);const ctx=lv.ctx.filter(p=>p.timestamp>=t0).map(p=>({timestamp:p.timestamp,avgHighPrice:ok(p.avgHighPrice)?p.avgHighPrice:null,avgLowPrice:ok(p.avgLowPrice)?p.avgLowPrice:null}));
+  const vals=[...ctx.flatMap(p=>[p.avgHighPrice,p.avgLowPrice]),...lv.hi.map(x=>x.v),...lv.lo.map(x=>x.v)].filter(Boolean);
+  if(!vals.length){$('lvChart').innerHTML='<div class="muted">Warte auf Trades…</div>';return}
+  let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*.12||hi*.005;lo-=pad;hi+=pad;
+  const X=t=>P.l+(t-t0)/(now-t0)*(W-P.l-P.r),Y=v=>P.t+(1-(v-lo)/(hi-lo))*(H-P.t-P.b);
+  const ctxLine=k=>{const pts=ctx.filter(p=>p[k]).map(p=>[X(p.timestamp+150),Y(p[k])]);return pts.length>1?monoPath(pts):''};
+  const step=(arr,col)=>{if(!arr.length)return'';let a=arr.filter(x=>x.t>=t0);const pre=arr.filter(x=>x.t<t0).pop();if(pre)a=[{t:t0,v:pre.v},...a];if(!a.length)return'';
+    let d=`M${X(a[0].t).toFixed(1)},${Y(a[0].v).toFixed(1)}`;for(let i=1;i<a.length;i++)d+=`H${X(a[i].t).toFixed(1)}V${Y(a[i].v).toFixed(1)}`;d+=`H${X(now).toFixed(1)}`;
+    const dots=a.map(x=>`<circle cx="${X(x.t).toFixed(1)}" cy="${Y(x.v).toFixed(1)}" r="2.4" fill="${col}"/>`).join('');
+    const last=a[a.length-1];
+    return`<path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>${dots}<line x1="${P.l}" x2="${W-P.r}" y1="${Y(last.v).toFixed(1)}" y2="${Y(last.v).toFixed(1)}" stroke="${col}" stroke-opacity=".35" stroke-dasharray="3 4"/><circle class="pulse" cx="${X(now).toFixed(1)}" cy="${Y(last.v).toFixed(1)}" r="4" fill="${col}"/>`};
+  let g='';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.06)" stroke-dasharray="2 4"/><text x="${P.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end">${gp(v)}</text>`}
+  for(let i=0;i<=3;i++){const t=t0+(now-t0)*i/3;g+=`<text x="${X(t).toFixed(1)}" y="${H-6}" text-anchor="${i===0?'start':i===3?'end':'middle'}">${i===3?'jetzt':new Date(t*1000).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</text>`}
+  $('lvChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="overflow:visible">${g}
+    <path d="${ctxLine('avgHighPrice')}" fill="none" stroke="#34d399" stroke-opacity=".3" stroke-width="1.4"/><path d="${ctxLine('avgLowPrice')}" fill="none" stroke="#f87171" stroke-opacity=".3" stroke-width="1.4"/>
+    ${step(lv.hi,'#34d399')}${step(lv.lo,'#f87171')}</svg>
+    <div class="muted" style="font-size:11px;text-align:center">blass = 5-Min-Durchschnitt · kräftig = Einzel-Trades seit Öffnen</div>`;
+  $('lvLog').innerHTML=lv.log.map(x=>`<div class="lvrow"><span class="muted">${new Date(x.t*1000).toLocaleTimeString('de-DE')}</span><span>${x.k==='h'?'<span class="up">Sofort-Kauf</span>':'<span class="down">Sofort-Verkauf</span>'}</span><b>${full(x.v)} ${x.dir>0?'<span class="up">▲</span>':x.dir<0?'<span class="down">▼</span>':''}</b></div>`).join('')||'<div class="muted" style="font-size:13px;padding:6px 2px">Neue Trades erscheinen hier, sobald sie passieren.</div>';
+}
+
+// ---------- Live-Preise für offene Flips (alle 15 s) ----------
+async function liveOpen(){
+  if(document.hidden||!rows.length)return;
+  const ids=[...new Set(trades.filter(t=>t.sellPrice==null).map(t=>t.id))].slice(0,8);if(!ids.length)return;
+  await Promise.all(ids.map(async id=>{try{const d=(await getJSON(`/latest?id=${id}`)).data[id];const r=rows.find(x=>x.id===id);if(d&&r)Object.assign(r,{liveSell:d.high||r.liveSell,liveBuy:d.low||r.liveBuy})}catch(e){}}));
+  renderJournal();
+}
+setInterval(liveOpen,15000);
+
+// ---------- Glatte Charts ----------
+function fillGaps(a){const r=a.slice();let i=0;while(i<r.length&&r[i]==null)i++;if(i===r.length)return r;for(let k=0;k<i;k++)r[k]=r[i];
+  let last=i;for(let k=i+1;k<r.length;k++){if(r[k]!=null){for(let j=last+1;j<k;j++)r[j]=r[last]+(r[k]-r[last])*(j-last)/(k-last);last=k}}
+  for(let k=last+1;k<r.length;k++)r[k]=r[last];return r}
+function median(a,k){const h=k>>1;return a.map((_,i)=>{const w=a.slice(Math.max(0,i-h),i+h+1).sort((x,y)=>x-y);return w[w.length>>1]})}
+function movAvg(a,w){if(w<=1)return a;const h=w>>1;return a.map((_,i)=>{let s=0,n=0;for(let j=Math.max(0,i-h);j<=Math.min(a.length-1,i+h);j++){s+=a[j];n++}return s/n})}
+function smooth(a,n){const f=fillGaps(a);return movAvg(median(f,5),Math.max(1,Math.round(n/40)))}
+function monoPath(pts,move=true){ // monotone kubische Interpolation (kein Überschwingen)
+  const n=pts.length;if(n<2)return'';const dx=[],dy=[],m=[],t=[];
+  for(let i=0;i<n-1;i++){dx[i]=pts[i+1][0]-pts[i][0];dy[i]=pts[i+1][1]-pts[i][1];m[i]=dx[i]?dy[i]/dx[i]:0}
+  t[0]=m[0];t[n-1]=m[n-2];for(let i=1;i<n-1;i++)t[i]=m[i-1]*m[i]<=0?0:(m[i-1]+m[i])/2;
+  for(let i=0;i<n-1;i++){if(m[i]===0){t[i]=t[i+1]=0;continue}const a=t[i]/m[i],b=t[i+1]/m[i],q=a*a+b*b;if(q>9){const k=3/Math.sqrt(q);t[i]=k*a*m[i];t[i+1]=k*b*m[i]}}
+  let d=(move?'M':'L')+pts[0][0].toFixed(1)+','+pts[0][1].toFixed(1);
+  for(let i=0;i<n-1;i++){const h=dx[i]/3;d+=`C${(pts[i][0]+h).toFixed(1)},${(pts[i][1]+t[i]*h).toFixed(1)} ${(pts[i+1][0]-h).toFixed(1)},${(pts[i+1][1]-t[i+1]*h).toFixed(1)} ${pts[i+1][0].toFixed(1)},${pts[i+1][1].toFixed(1)}`}
+  return d}
+let chartSeq=0,chartModel=null;
 function chartSVG(d){
-  d=d.filter(p=>p.avgHighPrice||p.avgLowPrice);if(d.length<2)return'Zu wenige Datenpunkte.';
-  const W=360,H=200,P={l:46,r:6,t:8,b:38},VH=30;
-  const x0=d[0].timestamp,x1=d[d.length-1].timestamp;
-  const vals=d.flatMap(p=>[p.avgHighPrice,p.avgLowPrice].filter(Boolean));let lo=Math.min(...vals),hi=Math.max(...vals);if(lo===hi){lo*=.99;hi*=1.01}
-  const vmax=Math.max(...d.map(p=>(p.highPriceVolume||0)+(p.lowPriceVolume||0)),1);
+  d=d.filter(p=>p.avgHighPrice||p.avgLowPrice);if(d.length<3)return'Zu wenige Datenpunkte.';
+  const n=d.length,W=360,H=190,P={l:46,r:8,t:12,b:34},VH=26,id='c'+(++chartSeq);
+  const hiS=smooth(d.map(p=>p.avgHighPrice||null),n),loS=smooth(d.map(p=>p.avgLowPrice||null),n);
+  const ts=d.map(p=>p.timestamp),x0=ts[0],x1=ts[n-1];
+  let lo=Math.min(...loS,...hiS),hi=Math.max(...loS,...hiS);const pad=(hi-lo)*.08||hi*.01;lo-=pad;hi+=pad;
   const X=t=>P.l+(t-x0)/(x1-x0||1)*(W-P.l-P.r),Y=v=>P.t+(1-(v-lo)/(hi-lo))*(H-P.t-P.b);
-  const line=k=>{let s='',pen=false;for(const p of d){if(!p[k]){pen=false;continue}s+=(pen?'L':'M')+X(p.timestamp).toFixed(1)+','+Y(p[k]).toFixed(1);pen=true}return s};
-  const bw=Math.max(.6,(W-P.l-P.r)/d.length-.4);
-  const bars=d.map(p=>{const h=((p.highPriceVolume||0)+(p.lowPriceVolume||0))/vmax*VH;return`<rect x="${(X(p.timestamp)-bw/2).toFixed(1)}" y="${(H-P.b+18+VH-h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="rgba(245,184,61,.35)"/>`}).join('');
-  let g='';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.07)"/><text x="${P.l-4}" y="${y+4}" text-anchor="end">${gp(v)}</text>`}
-  for(let i=0;i<=2;i++){const t=x0+(x1-x0)*i/2,dt=new Date(t*1000);g+=`<text x="${X(t)}" y="${H-P.b+13}" text-anchor="${['start','middle','end'][i]}">${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} ${dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</text>`}
-  return`<svg viewBox="0 0 ${W} ${H+VH-12}" width="100%">${g}${bars}<path d="${line('avgHighPrice')}" fill="none" stroke="#34d399" stroke-width="1.4"/><path d="${line('avgLowPrice')}" fill="none" stroke="#f87171" stroke-width="1.4"/></svg>`;
+  const ph=ts.map((t,i)=>[X(t),Y(hiS[i])]),pl=ts.map((t,i)=>[X(t),Y(loS[i])]);
+  const band=monoPath(ph)+monoPath(pl.slice().reverse(),false)+'Z';
+  const midS=hiS.map((v,i)=>(v+loS[i])/2),chg=midS[n-1]/midS[0]-1,col=chg>=0?'#34d399':'#f87171';
+  const pm=ts.map((t,i)=>[X(t),Y(midS[i])]);
+  const area=monoPath(pm)+`L${pm[n-1][0].toFixed(1)},${H-P.b}L${pm[0][0].toFixed(1)},${H-P.b}Z`;
+  // Volumen in max. 48 Balken bündeln
+  const B=Math.min(48,n),vb=Array(B).fill(0);d.forEach((p,i)=>vb[Math.min(B-1,Math.floor(i/n*B))]+=(p.highPriceVolume||0)+(p.lowPriceVolume||0));
+  const vmax=Math.max(...vb,1),bw=(W-P.l-P.r)/B;
+  const bars=vb.map((v,i)=>{const h=Math.max(1,v/vmax*VH);return`<rect x="${(P.l+i*bw+1).toFixed(1)}" y="${(H+VH-h).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="rgba(245,184,61,.35)"/>`}).join('');
+  let g='';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,.06)" stroke-dasharray="2 4"/><text x="${P.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end">${gp(v)}</text>`}
+  const fmtT=t=>{const dt=new Date(t*1000);return dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' '+dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})};
+  for(let i=0;i<=2;i++){const t=x0+(x1-x0)*i/2;g+=`<text x="${X(t).toFixed(1)}" y="${H-P.b+16}" text-anchor="${['start','middle','end'][i]}">${fmtT(t)}</text>`}
+  chartModel={id,ts,hiS,loS,X,Y,P,W,H,fmtT};
+  return`<div class="chg ${chg>=0?'up':'down'}">${chg>=0?'▲':'▼'} ${pct(chg,2)} <span class="muted">im Zeitraum</span></div>
+  <svg id="${id}" viewBox="0 0 ${W} ${H+VH+4}" width="100%" style="touch-action:pan-y;overflow:visible">
+    <defs><linearGradient id="${id}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".28"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    ${g}<path d="${area}" fill="url(#${id}a)"/><path d="${band}" fill="rgba(255,255,255,.05)"/>
+    <path d="${monoPath(ph)}" fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="${monoPath(pl)}" fill="none" stroke="#f87171" stroke-width="1.8" stroke-linecap="round"/>
+    ${bars}
+    <g id="${id}h" style="display:none"><line id="${id}l" y1="${P.t}" y2="${H-P.b}" stroke="rgba(255,255,255,.35)" stroke-dasharray="3 3"/>
+      <circle id="${id}c1" r="3.5" fill="#34d399" stroke="#0b0d12" stroke-width="1.5"/><circle id="${id}c2" r="3.5" fill="#f87171" stroke="#0b0d12" stroke-width="1.5"/></g>
+    <rect x="${P.l}" y="0" width="${W-P.l-P.r}" height="${H+VH}" fill="transparent" id="${id}o"/>
+  </svg><div class="tip" id="${id}t">Finger über die Kurve ziehen für Details</div>`;
+}
+function bindChart(){
+  const m=chartModel;if(!m)return;const svg=$(m.id);if(!svg)return;
+  const show=e=>{const r=svg.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*m.W;
+    let i=0,best=1e9;m.ts.forEach((t,k)=>{const dd=Math.abs(m.X(t)-x);if(dd<best){best=dd;i=k}});
+    const xx=m.X(m.ts[i]);$(m.id+'h').style.display='';$(m.id+'l').setAttribute('x1',xx);$(m.id+'l').setAttribute('x2',xx);
+    $(m.id+'c1').setAttribute('cx',xx);$(m.id+'c1').setAttribute('cy',m.Y(m.hiS[i]));$(m.id+'c2').setAttribute('cx',xx);$(m.id+'c2').setAttribute('cy',m.Y(m.loS[i]));
+    $(m.id+'t').innerHTML=`<b>${m.fmtT(m.ts[i])}</b> · <span class="up">Verk. ${full(m.hiS[i])}</span> · <span class="down">Kauf ${full(m.loS[i])}</span>`};
+  const o=$(m.id+'o');o.addEventListener('pointerdown',show);o.addEventListener('pointermove',show);
+  o.addEventListener('pointerleave',()=>{$(m.id+'h').style.display='none'});
 }
 
 // ---------- Events ----------
@@ -755,7 +890,7 @@ document.addEventListener('click',e=>{
   const tw=e.target.closest('#trendWin button');if(tw){trendWin=tw.dataset.w;segOn('#trendWin',tw);renderTrends();return}
   const as=e.target.closest('#allSort button');if(as){allSort=as.dataset.s;segOn('#allSort',as);renderAllList();return}
   const cd=e.target.closest('.card[data-id]');if(cd){openItem(+cd.dataset.id);return}
-  if(e.target.id==='sheet')$('sheet').classList.remove('open');
+  if(e.target.id==='sheet'){$('sheet').classList.remove('open');stopLive()}
 });
 function segOn(sel,btn){document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on',b===btn))}
 $('search').addEventListener('input',renderAllList);
@@ -770,7 +905,7 @@ $('impBtn').onclick=()=>{const ta=$('impTxt');if(ta.style.display!=='block'||!ta
 renderJournal();
 $('notifBtn').onclick=async()=>{try{if(!('Notification'in window))return toast('Dieses Gerät unterstützt keine Web-Benachrichtigungen – Hinweise kommen als Einblendung + Vibration.');
   const p=await Notification.requestPermission();toast(p==='granted'?'Benachrichtigungen aktiv ✅':'Nicht erlaubt – Hinweise kommen als Einblendung.')}catch(e){toast('Benachrichtigungen nicht verfügbar.')}};
-const SETTINGS=['ltMin','ltN','slots','budget','mode','minVol','minRoi','maxRoi','maxAge','share','members','notifyTop'];
+const SETTINGS=['refresh_s','ltMin','ltN','slots','budget','mode','minVol','minRoi','maxRoi','maxAge','share','members','notifyTop'];
 const saved=store.get('settings',{});
 SETTINGS.forEach(k=>{const el=$(k);if(k in saved){if(el.type==='checkbox')el.checked=saved[k];else el.value=saved[k]}
   el.addEventListener('input',()=>{const s={};SETTINGS.forEach(j=>{const x=$(j);s[j]=x.type==='checkbox'?x.checked:x.value});store.set('settings',s);renderAll()})});
@@ -781,7 +916,8 @@ $('budgetTop').addEventListener('input',()=>setBudget($('budgetTop').value));
 $('budget').addEventListener('input',()=>{if(document.activeElement!==$('budgetTop'))$('budgetTop').value=$('budget').value});
 document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{$('budgetTop').value=b.dataset.b;setBudget(b.dataset.b)});
 // Live: jede Minute, und sofort wenn die App wieder in den Vordergrund kommt
-function start(){clearInterval(timer);timer=setInterval(()=>{if(!document.hidden)load()},60000)}
+function start(){clearInterval(timer);timer=setInterval(()=>{if(!document.hidden)load()},(+$('refresh_s').value||60)*1000)}
+$('refresh_s').addEventListener('change',start);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-lastTs>30000)load()});
 load();start();
 </script>
